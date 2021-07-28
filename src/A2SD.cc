@@ -70,11 +70,11 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
   //if(volume->GetName().contains("TAPS")||volume->GetName().contains("PbWO"))id=mothervolume->GetCopyNo()+volume->GetCopyNo();
   if(mothervolume->GetName().contains("COVR"))id=mothervolume->GetCopyNo()+volume->GetCopyNo();
   else id = volume->GetCopyNo();
-  //troubleshooting
-  if(mothervolume->GetName().contains("TPC"))G4cout<<id<<G4endl;
   //seperate ADC gates for TAPS
-  if((mothervolume->GetName().contains("COVR"))&&(aStep->GetPreStepPoint()->GetGlobalTime()>2000*ns))return false;
-  else if (aStep->GetPreStepPoint()->GetGlobalTime()>600*ns)return false; 
+  if(mothervolume->GetName().contains("COVR")){if (aStep->GetPreStepPoint()->GetGlobalTime()>2000*ns) return false; }
+  //long ADC gate for TPC to record electron drift
+  if(volume->GetName().contains("Anode")){ if (aStep->GetPreStepPoint()->GetGlobalTime()>2*ms) return false; }
+  else if (aStep->GetPreStepPoint()->GetGlobalTime()>600*ns)return false;
 
   if(volume->GetName().contains("PhysiHe")) return false;
   //add analagous declaration for TPC? Or create PhysiHe for TPC?
@@ -100,7 +100,8 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     //if this crystal has already had a hit
     //don't make a new one, add on to old one.   
     // G4cout<<"Make hit "<<fCollection<<G4endl;
-    A2Hit* myHit = new A2Hit;
+    A2Hit* myHit = new A2Hit();
+    //A2Hit* myHit = new A2Hit(volume->GetLogicalVolume()); //new hit method: testing for Heed model
     myHit->SetID(id);
     myHit->AddEnergy(edep);
     myHit->AddCharge(qdep); //add the charge of the particle: for TPC anode
@@ -108,6 +109,8 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     myHit->AddPartCharge(track_info->GetPartID(), qdep);
     myHit->SetPos(aStep->GetPreStepPoint()->GetPosition());
     myHit->SetTime(aStep->GetPreStepPoint()->GetGlobalTime());
+  //troubleshooting
+  if(volume->GetName().contains("HELIUM"))myHit->Print();
     fhitID[id] = fCollection->insert(myHit) -1;
     fHits[fNhits++]=id;
   }

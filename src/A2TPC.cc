@@ -9,23 +9,16 @@
 
 #include "G4SDManager.hh" //manage sensitive detector
 #include "G4Tubs.hh" //cylinder
-#include "G4Box.hh" //box
 #include "G4Cons.hh" //cone
-#include "G4Trd.hh" //trapezoid
 #include "G4NistManager.hh"  //element manager
 #include "G4VisAttributes.hh" //visualization
 #include "G4PVPlacement.hh" //placement
 #include "G4UnionSolid.hh" //union of several solide
-#include "G4SubtractionSolid.hh" //subtract other solids
 #include "G4RotationMatrix.hh" //rotate and place solids
-#include "G4OpticalSurface.hh" //optical properties
-#include "G4LogicalSkinSurface.hh"
-#include "G4LogicalBorderSurface.hh"
 #include "G4SystemOfUnits.hh" //units
 #include "G4PhysicalConstants.hh" //constants
 #include "A2SD.hh" //sensitive detector
 #include "A2VisSD.hh" //visual sensitive detector
-#include "A2MagneticField.hh" //magnetic fields
 #include "A2ElectricField.hh" //my electric field class
 #include "A2HeedModel.hh" //my electron propagation model
 #include "G4FastSimulationManager.hh"
@@ -380,7 +373,7 @@ void A2TPC::MakeAnodeCathode(){
                         "AnodeCentrePlacement", //name
                         fAnodeLogic, //mother volume
                         false, //pmany: always false
-                        66,fIsOverlapVol); //unique copy number
+                        2+(fRadialSecs)*(fAngularSecs),fIsOverlapVol); //unique copy number
         //ring around central piece (G-10)
 	new G4PVPlacement(0, //rotation
                         G4ThreeVector(0,0,0), //placement
@@ -388,13 +381,13 @@ void A2TPC::MakeAnodeCathode(){
                         "AnodeRingPlacement", //name
                         fAnodeLogic, //mother volume
                         false, //pmany: always false
-                        65,fIsOverlapVol); //unique copy number
+                        1+(fRadialSecs)*(fAngularSecs),fIsOverlapVol); //unique copy number
 	
 	/*** segments of anode: reads specifications from parameter file ****/
 	/***** define solid and logical volume for each radial section *****/
 	for(G4int k=0; k<fRadialSecs; k++){
-		//section of first row (G-10)
-		fAnodeSec[k] = new G4Tubs("AnodeSec1",
+		//section of each row (G-10)
+		fAnodeSec[k] = new G4Tubs("AnodeSec",
                                         20.*mm+(k)*(fAnodeRadius-20.*mm)/fRadialSecs,
                                         20.*mm+(k+1)*(fAnodeRadius-20.*mm)/fRadialSecs,
                                         fGThickness/2,
@@ -420,7 +413,8 @@ void A2TPC::MakeAnodeCathode(){
                         "AnodeSecPlacement", //name
                         fAnodeLogic, //mother volume
                         false, //pmany: always false
-                        1+h+k*fAngularSecs,fIsOverlapVol); //unique copy number
+                        1+h*fRadialSecs+k,fIsOverlapVol);
+			//1+h+k*fAngularSecs,fIsOverlapVol); //unique copy number
 		}
 	}
         
@@ -557,8 +551,7 @@ void A2TPC::MakeField(){
 
 	/***** set specific production cuts for active gas region *****/
 	G4ProductionCuts* TPCcuts = new G4ProductionCuts(); //create custom cut
-	G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(10*eV,1*GeV);
-	TPCcuts->SetProductionCut(0.001*nm,"e-"); //no minimum distance: make any electrons possible
+	G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(10*eV,1*GeV); //optimized at 10 eV lower limit
 	fRegionActiveGas->SetProductionCuts(TPCcuts); //assign this cut to this region
 	
 	/***** attach model of electron drift to active gas region *****/

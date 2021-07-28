@@ -6,7 +6,8 @@
 
 class A2DetectorConstruction;
 class A2EventAction;
-
+class G4Region;
+class G4FastSimulationManager;
 
 class A2SteppingAction : public G4UserSteppingAction
 {
@@ -18,7 +19,9 @@ class A2SteppingAction : public G4UserSteppingAction
     
   private:
     A2DetectorConstruction* detector;
-    A2EventAction*          eventaction;  
+    A2EventAction*          eventaction;
+    G4Region* fRegion;
+    G4FastSimulationManager* fFSManager;  
 };
 
 

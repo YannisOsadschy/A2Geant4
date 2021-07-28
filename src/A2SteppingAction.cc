@@ -17,6 +17,8 @@
 #include "G4SteppingManager.hh"
 #include "G4RunManager.hh"
 #include "CLHEP/Units/SystemOfUnits.h"
+#include "G4FastSimulationManagerProcess.hh"
+#include "A2HeedModel.hh"
 
 using namespace CLHEP;
 
@@ -29,6 +31,8 @@ A2SteppingAction::A2SteppingAction(A2DetectorConstruction* det,
 {
     detector = det;
     eventaction = evt;
+    fRegion=NULL;
+    fFSManager=NULL;
 }
 
 
@@ -105,10 +109,22 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
    G4double edep = aStep->GetTotalEnergyDeposit();
   
 //   G4double stepl = 0.;
-//track electrons long enough to let them propogate to anode
-if(track->GetDefinition()->GetParticleName()==G4String("e-")){
-	//G4cout<<"Tracking electron "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;
-	if(aStep->GetPreStepPoint()->GetGlobalTime()>1000*ms)track->SetTrackStatus(fStopAndKill);
+
+
+//force electrons to drift in Time Projection chamber
+if(track->GetDefinition()->GetParticleName()==G4String("e-")){ //only applies to electrons
+	if(fpSteppingManager->GetfCurrentVolume()->GetName()=="HELIUM" && track->GetKineticEnergy()!=0){ //check for non-zero energy inside active volume 
+		//G4cout<<"Drift electron..."<<G4endl; //debugging progress message
+		//get the fast simulation manager for the active volume
+		if (!fRegion) fRegion = fpSteppingManager->GetfCurrentVolume()->GetLogicalVolume()->GetRegion();
+		if (!fFSManager) fFSManager = fRegion->GetFastSimulationManager();
+		//G4cout<<"Checking for trigger..."<<G4endl; //debugging progress message
+		if(fFSManager->PostStepGetFastSimulationManagerTrigger(*track)){ //check if Heed process applies
+			G4VParticleChange* fastStep = fFSManager->InvokePostStepDoIt(); //force heed process to occur
+			track->SetTrackStatus(fStopAndKill); //stop particle after running Heed process
+			//do nothing: currently test-running simulation without this
+		}
+	}	
 }
 //stop tracking after the trigger time
 else if(aStep->GetPreStepPoint()->GetGlobalTime()>2*ms)track->SetTrackStatus(fStopAndKill);
