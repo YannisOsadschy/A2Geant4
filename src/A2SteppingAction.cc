@@ -18,7 +18,7 @@
 #include "G4RunManager.hh"
 #include "CLHEP/Units/SystemOfUnits.h"
 #include "G4FastSimulationManagerProcess.hh"
-#include "A2HeedModel.hh"
+#include "A2DriftModel.hh"
 
 using namespace CLHEP;
 
