@@ -6,8 +6,6 @@
 #include "A2ElectricField.hh"
 
 #include "G4UniformElectricField.hh" //base class
-#include "G4UniformMagField.hh" //magnetic field
-#include "G4MagneticField.hh" //also magnetic field - why are you here?
 #include "G4FieldManager.hh" //EM field manager
 #include "G4TransportationManager.hh" //manages transport in fields
 #include "G4EquationOfMotion.hh" //general eqn of motion

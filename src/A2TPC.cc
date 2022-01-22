@@ -2,7 +2,7 @@
  * Small TPC to be used in TPC+CB experiment.
  * Based on specifications by V Sokhoyan and E Maev.
  * Reads parameters from data/TPC.dat.
- * Requires class A2HeedModel for proper electron propagation.
+ * Requires class A2DriftModel for proper electron propagation.
  ***** AC Postuma 2021 *****/
 
 #include "A2TPC.hh"
@@ -330,15 +330,15 @@ void A2TPC::MakeAnodeCathode(){
 	//circular central piece (G-10)
         G4Tubs *fAnodeCentre = new G4Tubs("AnodeCentre",
                                         0,
-                                        7.*mm,
+                                        fRadPad*mm,
                                         fGThickness/2,
                                         0.*deg,
                                         360.*deg);
 	//ring around central piece (G-10)
         G4Tubs *fAnodeRing = new G4Tubs("AnodeRing", 
-					7.*mm,
-                                        10.*mm,
-                                        fGThickness/2,
+					fRadPad*mm,
+                                        fRadRing*mm,
+					fGThickness/2,
                                         0.*deg,
                                         360.*deg);
 	
@@ -376,7 +376,7 @@ void A2TPC::MakeAnodeCathode(){
                         fAnodeLogic, //mother volume
                         false, //pmany: always false
                         //1);
-			2+(fRadialSecs)*(fAngularSecs),fIsOverlapVol); //unique copy number
+			2+4*(fAngularSecs),fIsOverlapVol); //unique copy number
         //ring around central piece (G-10)
 	new G4PVPlacement(0, //rotation
                         G4ThreeVector(0,0,0), //placement
@@ -385,16 +385,18 @@ void A2TPC::MakeAnodeCathode(){
                         fAnodeLogic, //mother volume
                         false, //pmany: always false
                         //2);
-			1+(fRadialSecs)*(fAngularSecs),fIsOverlapVol); //unique copy number
+			1+4*(fAngularSecs),fIsOverlapVol); //unique copy number
 	
 	/*** segments of anode: reads specifications from parameter file ****/
 	/***** define solid and logical volume for each radial section *****/
-	for(G4int k=0; k<fRadialSecs; k++){
+	//new design: add some 
+	G4double radii[5]={fRadRing,fRad1,fRad2,fRad3,fRad4};
+	for(G4int k=0; k<4; k++){
 		//section of each row (G-10)
 		fAnodeSec[k] = new G4Tubs("AnodeSec",
-                                        10*mm+(k)*(fAnodeRadius-10.*mm)/fRadialSecs,
-                                        10*mm+(k+1)*(fAnodeRadius-10.*mm)/fRadialSecs,
-                                        fGThickness/2,
+                                        radii[k],
+					radii[k+1],
+					fGThickness/2,
                                         0.*deg,
 					360.*deg/fAngularSecs);
         	fAnodeSecLogic[k] = new G4LogicalVolume
@@ -417,7 +419,7 @@ void A2TPC::MakeAnodeCathode(){
                         "AnodeSecPlacement", //name
                         fAnodeLogic, //mother volume
                         false, //pmany: always false
-                        1+h*fRadialSecs+k,fIsOverlapVol);
+                        1+h*4+k,fIsOverlapVol);
 			//1+h+k*fAngularSecs,fIsOverlapVol); //unique copy number
 		}
 	}
@@ -531,12 +533,12 @@ void A2TPC::MakeSensitiveDetector(){
 	/***** define and register sensitive detector *****/
         if(!fAnodeSD){ //if SD not already defined
         G4SDManager* SDman = G4SDManager::GetSDMpointer(); //get pointer to SD manager
-        fAnodeSD = new A2SD("AnodeSD",2+fRadialSecs*fAngularSecs); //create a new SD
+        fAnodeSD = new A2SD("AnodeSD",2+4*fAngularSecs); //create a new SD
         SDman->AddNewDetector(fAnodeSD); //add this detector to the SD manager
 
         /***** set each piece of anode as part of the sensitive detector *****/
 	
-	for(G4int n=0; n<fRadialSecs; n++){ //for each anode section
+	for(G4int n=0; n<4; n++){ //for each anode section
 		fAnodeSecLogic[n]->SetSensitiveDetector(fAnodeSD); //make sensitive
 		fRegionAnode->AddRootLogicalVolume(fAnodeSecLogic[n]); //add to region
 	}
@@ -556,7 +558,8 @@ void A2TPC::MakeField(){
 
 	/***** set specific production cuts for active gas region *****/
 	G4ProductionCuts* TPCcuts = new G4ProductionCuts(); //create custom cut
-	G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(10*eV,1*GeV); //optimized at 10 eV lower limit
+	G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(7*eV,1*GeV); //optimized at 7 eV lower limit
+	//this gives the most linear charge-energy relationship
 	fRegionActiveGas->SetProductionCuts(TPCcuts); //assign this cut to this region
 	
 	/***** attach model of electron drift to active gas region *****/
@@ -661,9 +664,9 @@ void A2TPC::ReadParameters(const char* file){
             if( iread != 8) ierr++;
             break;
         case EAnode_dim: //dimensions of anode
-            iread = sscanf(line,"%*s%lf%lf%lf%i%i",
-                            &fGThickness,&fAnodeRadius,&fAnodeDistance,&fRadialSecs,&fAngularSecs);
-            if (iread !=5) ierr++;
+            iread = sscanf(line,"%*s%lf%lf%i%lf%lf%lf%lf%lf%lf",
+                            &fGThickness,&fAnodeDistance,&fAngularSecs,&fRadPad,&fRadRing,&fRad1,&fRad2,&fRad3,&fRad4);
+            if (iread !=9) ierr++;
             break;
         case EGrid_dim: //dimensions of anode
             iread = sscanf(line,"%*s%lf%lf",
@@ -728,7 +731,7 @@ void A2TPC::DefineMaterials()
         Al->AddElement(fNistManager->FindOrBuildElement(13),1);
     
 	
-	/***** other stuff from a2ActiveHe3.cc *****/
+	/***** Active gas from A2ActiveHe3.cc *****/
 	//Gas mixture and He3 management----------------------------------------------------
 
 	//defining He3 according to
@@ -736,6 +739,8 @@ void A2TPC::DefineMaterials()
 	G4Element* ATHe3 = new G4Element("ATHe3", "ATHe3", ncomponents=1);
 	ATHe3->AddIsotope((G4Isotope*)fNistManager->FindOrBuildElement(2)->GetIsotope(0), //isot. 0 = 3he
                       100.*perCent);
+	G4Element* ATH = new G4Element("ATH","ATH",ncomponents=1);
+	ATH->AddIsotope((G4Isotope*)fNistManager->FindOrBuildElement(1)->GetIsotope(0),100.*perCent);
 
 	//See HeGasDensity.nb. Might be an idea to include N2 effect to density
 	//G4double he3density = 0.00247621*g/cm3; //20bar, calculated from ideal gas law
@@ -753,21 +758,30 @@ void A2TPC::DefineMaterials()
 	//NO IDEA WHETHER IT IS CORRECT OR NOT
 
 	G4Material* He3GasPure = new G4Material("He3GasPure", he3density, ncomponents = 1,kStateGas,CLHEP::STP_Temperature,fHePressure*bar);
-	He3GasPure->AddElement(ATHe3, 100.*perCent);                                       //He3
+	He3GasPure->AddElement(ATHe3, 100.*perCent);
+
+	//Active gas - has 10% hydrogen
+	//density decreases accordingly: 0.9*1 + 0.1 * (2/3) = 0.96 of original density
+	G4Material* He3ActiveGas = new G4Material("He3ActiveGas",he3density*0.96, ncomponents =2, kStateGas, CLHEP::STP_Temperature,fHePressure*bar);
+	He3ActiveGas->AddElement(ATHe3,90.*perCent);
+	He3ActiveGas->AddElement(ATH,10.*perCent);
 
 	//define He4 in a similar manner
 	G4Element* ATHe4 = new G4Element("ATHe4","ATHe4",ncomponents=1);
 	ATHe4->AddIsotope((G4Isotope*)fNistManager->FindOrBuildElement(2)->GetIsotope(1),100.*perCent);
-	//for sake of experimentation, try an even lower density
 	G4double he4density = (fHePressure/20)*0.0033*g/cm3*(4/3); //scale Phil's IG calculation according to pressure from parameter file
 	//4He edit: assume same number density as helium-3, but more nucleons means more mass
 
 	G4Material* He4GasPure = new G4Material("He4GasPure",he4density, ncomponents=1,kStateGas,CLHEP::STP_Temperature,fHePressure*bar);
 	He4GasPure->AddElement(ATHe4, 100.*perCent);
 
+
+	G4Material* He4ActiveGas = new G4Material("He4ActiveGas",he4density*0.96, ncomponents =2, kStateGas, CLHEP::STP_Temperature,fHePressure*bar);
+	He4ActiveGas->AddElement(ATHe4,90.*perCent);
+	He4ActiveGas->AddElement(ATH,10.*perCent);
 	//decide which version of helium you are using
 	//G4String fHeMaterial;
-	if(fHeIsotope==3){fHeMaterial="He3GasPure";
-	} else if(fHeIsotope==4){fHeMaterial="He4GasPure";
+	if(fHeIsotope==3){fHeMaterial="He3ActiveGas";
+	} else if(fHeIsotope==4){fHeMaterial="He4ActiveGas";
 	} else {fHeMaterial="ATGasMix";} //make the mix for any non-3,4 argument
 }

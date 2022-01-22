@@ -2,6 +2,7 @@
 #include "A2FileGenerator.hh"
 #include "G4RunManager.hh"
 #include "CLHEP/Units/SystemOfUnits.h"
+#include "A2UserTrackInformation.hh"
 
 using namespace CLHEP;
 
@@ -22,6 +23,9 @@ A2CBOutput::A2CBOutput(){
   fBeamLorentzVec=fPGA->GetBeamLorentzVec();//Will take the default beam if no ntuple
   fGenPartType=fPGA->GetGenPartType();
   fvertex=fPGA->GetVertex();
+  Int_t* fpart = fPGA->GetParticlesToBeTracked();
+  A2UserTrackInformation *tracks;
+  //G4Track* ftrack=tracks->GetTrack(fpart);
   //Initialise arrays dependent on number of particles
   //Note can't initialize 2 dimesional arrays like this when writing 
   //to a ROOT TTree, you only get the correct info for the first particle
@@ -93,6 +97,7 @@ void A2CBOutput::SetBranches(){
   fTree->Branch("ectapsl",fectapsl,"fectapsl[fntaps]/F",basket);
   fTree->Branch("elab",felab,"felab[fnpart]/F",basket);
   fTree->Branch("klab",fklab,"fklab[fnpart]/F",basket);
+  //fTree->Branch("theta",ftheta,"ftheta[fnpart]/F",basket);
   fTree->Branch("eleak",&feleak,"feleak/F",basket);
   fTree->Branch("enai",&fenai,"fenai/F",basket);
   fTree->Branch("etot",&fetot,"fetot/F",basket);
@@ -250,7 +255,7 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
       for(Int_t ii=0;ii<fnhe3;ii++){
 	A2Hit* hit=static_cast<A2Hit*>(hc->GetHit(ii));
     fehe3[ii]=hit->GetEdep()/GeV;
-    fthe3[ii]=hit->GetTime()/ns;
+    fthe3[ii]=hit->GetTime()/ms;
 	//fhe3x[ii]=hit->GetPos().x()/cm;
 	//fhe3y[ii]=hit->GetPos().y()/cm;
 	//fhe3z[ii]=hit->GetPos().z()/cm;
@@ -263,8 +268,8 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
       for(Int_t ii=0;ii<fntpc;ii++){
         A2Hit* hit=static_cast<A2Hit*>(hc->GetHit(ii));
 	//hit->Print();
-    fqtpc[ii]=hit->GetQdep(); //units???
-    fttpc[ii]=hit->GetTime()/ns;
+    fqtpc[ii]=hit->GetQdep()/eplus; //units???
+    fttpc[ii]=hit->GetTime()/ms;
         //ftpcx[ii]=hit->GetPos().x()/cm;
         //ftpcy[ii]=hit->GetPos().y()/cm;
         //ftpcz[ii]=hit->GetPos().z()/cm;
@@ -294,6 +299,7 @@ void A2CBOutput::WriteGenInput(){
     felab[i]=fGenLorentzVec[i]->E()/GeV;
     fklab[i]=(fGenLorentzVec[i]->E()-fGenLorentzVec[i]->M())/MeV;
     fplab[i]=fGenLorentzVec[i]->Rho()/GeV;
+    //ftheta[i]=fGenLorentzVec[i]->Vect().Theta();
     fidpart[i]=fGenPartType[i];
   }
   if (fIsGiBUU) fweight = fPGA->GetFileGen()->GetWeight();

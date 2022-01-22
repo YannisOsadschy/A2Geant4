@@ -150,10 +150,12 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     {
       hitTimes[id].push_back(time);
       avgTime[id]=accumulate(hitTimes[id].begin(), hitTimes[id].end(),0)/hitTimes[id].size();
-      (*fCollection)[fhitID[id]]->SetTime(avgTime[id]);
+      //(*fCollection)[fhitID[id]]->SetTime(avgTime[id]);
+      //if (id==66 && time > (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
+      if ( time < (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
 	 //if (id == 1 && time < (*fCollection)[fhitID[id]]->GetTime())
-	//      (*fCollection)[fhitID[id]]->SetTime(time); //set maximal possible time
-     // else if (time > (*fCollection)[fhitID[id]]->GetTime())
+	   //   (*fCollection)[fhitID[id]]->SetTime(time); //set minimum possible time
+     //else if (time > (*fCollection)[fhitID[id]]->GetTime())
 	//      (*fCollection)[fhitID[id]]->SetTime(time);
     }
   }

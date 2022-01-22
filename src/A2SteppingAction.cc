@@ -113,11 +113,13 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
 
 //force electrons to drift in Time Projection chamber
 if(track->GetDefinition()->GetParticleName()==G4String("e-")){ //only applies to electrons
-	if(fpSteppingManager->GetfCurrentVolume()->GetName()=="HELIUM" && track->GetKineticEnergy()!=0){ //check for non-zero energy inside active volume 
+	if(fpSteppingManager->GetfCurrentVolume()->GetName()=="HELIUM" && track->GetTrackStatus()!=fStopAndKill){ //check for active electron inside active volume 
 		//G4cout<<"Drift electron..."<<G4endl; //debugging progress message
 		//get the fast simulation manager for the active volume
 		if (!fRegion) fRegion = fpSteppingManager->GetfCurrentVolume()->GetLogicalVolume()->GetRegion();
 		if (!fFSManager) fFSManager = fRegion->GetFastSimulationManager();
+		//breaks for zero eenergy: give just a bit
+		if(track->GetKineticEnergy()==0)track->SetKineticEnergy(1*eV);
 		//G4cout<<"Checking for trigger..."<<G4endl; //debugging progress message
 		if(fFSManager->PostStepGetFastSimulationManagerTrigger(*track)){ //check if Heed process applies
 			G4VParticleChange* fastStep = fFSManager->InvokePostStepDoIt(); //force heed process to occur

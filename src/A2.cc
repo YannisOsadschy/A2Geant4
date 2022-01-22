@@ -4,6 +4,8 @@
 #include "G4UIterminal.hh"
 #include "G4UItcsh.hh"
 #include "G4OpticalPhysics.hh"
+#include "G4EmLivermorePhysics.hh"
+#include "G4FastSimulationPhysics.hh" //low E electron physics
 
 #define G4VIS_USE 1
 #define G4UI_USE 1
@@ -46,6 +48,8 @@
 #include "QGSP_BERT_HP.hh"
 
 #include <getopt.h>
+
+using namespace CLHEP;
 
 int main(int argc,char** argv) {
   
@@ -174,11 +178,17 @@ int main(int argc,char** argv) {
   //runManager->SetUserInitialization(new A2PhysicsList);
 
   G4VModularPhysicsList* physicsList = new QGSP_BERT;
+  //A2PhysicsList* physicsList = new A2PhysicsList;
   //G4VModularPhysicsList* physicsList = new QGSP_BERT_HP;
 
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
   physicsList->RegisterPhysics(opticalPhysics);
+  G4EmLivermorePhysics* lowEMPhysics = new G4EmLivermorePhysics();
+  physicsList->RegisterPhysics(lowEMPhysics);
+  G4FastSimulationPhysics* fastSimulationPhysics = new G4FastSimulationPhysics();
+  physicsList->RegisterPhysics(fastSimulationPhysics);
   runManager->SetUserInitialization(physicsList);
+ //G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(10*eV, 1*GeV);
 
   // to set parameters in code, if wanted
   //auto opticalParams = G4OpticalParameters::Instance();

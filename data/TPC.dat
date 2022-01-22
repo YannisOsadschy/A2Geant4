@@ -14,11 +14,13 @@ TPC-Dim: 281.0 92.0 8 25.0 200.0 25.0 17.0 6.0
 ##
 ## Anode specifications in mm
 ## Thickness : 1.5
-## Radius : 50
 ## Distance of anode from cell end : 25
-## Radial sections : 4
 ## Angular sections : 16
-Anode-Dim: 1.5 50 25 4 16
+## Radius of anode central pad
+## Radius of anode ring
+## Radius of first, second, and third rows
+## Radius of fourth row = outer radius of anode
+Anode-Dim: 1.5 25 16 5 7 10 13 25 50
 ##
 ## Cathode specifications in mm
 ## Thickness : 1.0
@@ -34,7 +36,7 @@ Grid-Dim: 0.05 0.5
 ##Helium specifications
 ##Isotope: He3 or He4
 ##Pressure: approximated for anywhere from 20 to 30 bar
-Helium: 4 30
+Helium: 3 20 
 ##
 ## Run Mode 0=no, 1=yes
 ## Check overlaps

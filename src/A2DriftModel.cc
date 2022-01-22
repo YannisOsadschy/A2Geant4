@@ -20,6 +20,7 @@
 #include "G4TransportationManager.hh" //particle transport
 #include "G4VVisManager.hh" //track visualization
 #include "CLHEP/Random/RandGauss.h" //random generation
+#include "TSpline.h"
 
 using namespace CLHEP;
 
@@ -165,14 +166,49 @@ void A2DriftModel::Reset(){
 void A2DriftModel::SetConstants(G4Region *gasRegion){
 	G4String name=gasRegion->GetRootLogicalVolumeIterator()[0]->GetMaterial()->GetName();
 	G4double pressure = gasRegion->GetRootLogicalVolumeIterator()[0]->GetMaterial()->GetPressure()/bar;
-	if (name.contains("3")){
-		drift_vel=2840+61*(30-pressure); //linear approx: real data from 30 bar
-		trans_diff=0.0325+0.00072*(30-pressure);
-		long_diff=0.0214+0.00049*(30-pressure);
-	} else {
-		drift_vel=2630+55*(30-pressure); //linear approx: real data from 30 bar
-		trans_diff=0.0353+0.00059*(30-pressure);
-		long_diff=0.0219+0.00071*(30-pressure);
+	G4double p_bar[6]={5,10,15,20,25,30}; //supported pressures
+	drift_vel=trans_diff=long_diff=0; //initialize
+	//set the correct set of constants for helium isotope
+	if (name.contains("3")){ //helium-3
+		G4double v[6]={7825,5445,4498,3940,3540,3235};
+		G4double dl[6]={0.0421,0.0310,0.0259,0.0236,0.0215,0.0202};
+		G4double dt[6]={0.0591,0.0447,0.0370,0.0329,0.0294,0.0275};
+	for (G4int i=0; i>6; i++){
+		if (pressure == p_bar[i]){ //if pressure at exact point
+			drift_vel = v[i]; //use exact values
+			trans_diff = dt[i];
+			long_diff = dl[i];
+			}
+		}
+	if (drift_vel ==0){ //if none of the exact values are found
+		//make some splines and use those
+		TSpline3* v_spline = new TSpline3("v_spline",p_bar,v,6);
+		TSpline3* dt_spline = new TSpline3("dt_spline",p_bar,dt,6);
+		TSpline3* dl_spline = new TSpline3("dl_spline",p_bar,dl,6);
+		drift_vel = v_spline->Eval(pressure);
+		trans_diff=dt_spline->Eval(pressure);
+		long_diff=dl_spline->Eval(pressure);
+		}	
+	} else { //helium-4
+		G4double v[6]={7680,5297,4367,3830,3437,3145};
+		G4double dl[6]={0.0433,0.0321,0.0266,0.0243,0.0220,0.0209};
+		G4double dt[6]={0.0601,0.0462,0.0381,0.0332,0.0307,0.0289};
+		for (G4int i=0; i>6; i++){
+			if (pressure == p_bar[i]){ //if pressure at exact point
+				drift_vel = v[i]; //use exact values
+				trans_diff = dt[i];
+				long_diff = dl[i];
+			}
+		}
+	if (drift_vel ==0){ //if no exact value found
+		//make some splines and use those
+		TSpline3* v_spline = new TSpline3("v_spline",p_bar,v,6);
+		TSpline3* dt_spline = new TSpline3("dt_spline",p_bar,dt,6);
+		TSpline3* dl_spline = new TSpline3("dl_spline",p_bar,dl,6);
+		drift_vel = v_spline->Eval(pressure);
+		trans_diff=dt_spline->Eval(pressure);
+		long_diff=dl_spline->Eval(pressure);
+		}		
 	}
 	G4cout<<name<<" "<<pressure<<" "<<drift_vel<<" "<<trans_diff<<" "<<long_diff<<G4endl;
 }

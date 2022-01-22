@@ -116,7 +116,12 @@ private: //private declarations
 	G4double fGThickness;
 	G4double fAnodeRadius;
 	G4double fAnodeDistance;
-	G4int fRadialSecs;
+	G4double fRadPad;
+	G4double fRadRing;
+	G4double fRad1;
+	G4double fRad2;
+	G4double fRad3;
+	G4double fRad4;
 	G4int fAngularSecs;
 	G4double fAlThickness;
 	G4double fCathodeRadius;
