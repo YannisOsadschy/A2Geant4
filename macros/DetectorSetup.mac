@@ -9,7 +9,7 @@
 #/A2/det/setCBCrystGeo extr
 
 ##Use TAPS?
-/A2/det/useTAPS 1
+/A2/det/useTAPS 0
 /A2/det/setTAPSFile data/taps07.dat
 /A2/det/setTAPSZ 146.35 cm
 #/A2/det/setTAPSZ 188 cm
@@ -50,6 +50,7 @@
 /A2/det/useTarget TPC
 #/A2/det/targetMaterial G4_lH2
 /A2/det/targetMaterial A2_lHe3
+#/A2/det/targetMaterial He4ActiveGas
 #/A2/det/setTargetLength 10 cm
 #/A2/det/setTargetZ 0. cm
 ####Solid targets

@@ -1,0 +1,13 @@
+#
+# Temporary diagnostic copy of doCompton4He.mac without the obsolete
+# /A2/physics/Physics command.
+#
+
+/run/initialize
+
+/A2/generator/NToBeTracked 2
+/A2/generator/Track 1
+/A2/generator/Track 2
+/A2/generator/InputFile /home/ostrick/Work/Geant/in/MC-Output.root
+
+/A2/event/setOutputFile /home/ostrick/Work/Geant/out/Geant-Output.root

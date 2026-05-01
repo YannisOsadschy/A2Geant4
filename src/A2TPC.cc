@@ -551,9 +551,10 @@ void A2TPC::MakeSensitiveDetector(){
 
 /***** this function creates electric field and field processes for the TPC *****/
 void A2TPC::MakeField(){
-	/***** create uniform electric field in helium ****/
-	fElectricField = new A2ElectricField(); //create (zero) electric field
-	fElectricField->Construct(2); //set the field strength in kV/cm
+	/***** attach the active gas region without Geant4 field transport ****/
+	// The drift model below parametrizes electron transport. Installing a
+	// Geant4 electric field here also steers all charged particles in the TPC
+	// gas and can make event tracking effectively stall for Compton input.
 	fRegionActiveGas->AddRootLogicalVolume(fVesselHeLogic); //create active gas region
 
 	/***** set specific production cuts for active gas region *****/

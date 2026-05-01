@@ -36,7 +36,7 @@ Grid-Dim: 0.05 0.5
 ##Helium specifications
 ##Isotope: He3 or He4
 ##Pressure: approximated for anywhere from 20 to 30 bar
-Helium: 3 20 
+Helium: 4 20 
 ##
 ## Run Mode 0=no, 1=yes
 ## Check overlaps

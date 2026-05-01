@@ -47,7 +47,7 @@ A2EventAction::A2EventAction(A2RunAction* run, A2PrimaryGeneratorAction* pga,
   fOutTree=NULL;
   fOutFileName=TString("");
 
-  fprintModulo=1000;
+  fprintModulo=10;
   fTimer = new TStopwatch();
   fCBOut=NULL;
   fOverwriteFile=false;
@@ -85,18 +85,19 @@ void A2EventAction::BeginOfEventAction(const G4Event* evt)
 void A2EventAction::EndOfEventAction(const G4Event* evt)
 {
   G4int evtNb = evt->GetEventID();
-  if (evtNb && evtNb % fprintModulo == 0)
+  G4int eventsDone = evtNb + 1;
+  if (fprintModulo > 0 && eventsDone % fprintModulo == 0)
   {
     //CLHEP::HepRandom::showEngineStatus();
-    fEventRate = evtNb / fTimer->RealTime();
+    fEventRate = eventsDone / fTimer->RealTime();
     fTimer->Continue();
-    G4cout << TString::Format("%7d events tracked (%.2f events/s)", evtNb, fEventRate);
+    G4cout << TString::Format("%7d events tracked (%.2f events/s)", eventsDone, fEventRate);
     if (fPGA->GetMode() == EPGA_FILE)
     {
       TString timeFmt;
-      FormatTimeSec((fReqEvents - evtNb) / (Double_t)fEventRate, timeFmt);
+      FormatTimeSec((fReqEvents - eventsDone) / (Double_t)fEventRate, timeFmt);
       G4cout << TString::Format(", %s remaining for %d/%d events",
-                timeFmt.Data(), fReqEvents-evtNb, fReqEvents) << G4endl;
+                timeFmt.Data(), fReqEvents-eventsDone, fReqEvents) << G4endl;
     }
     else
       G4cout << G4endl;
@@ -389,4 +390,3 @@ void A2EventAction::ReadDetectorSetup(const char* detSetup)
     file.close();
   }
 }
-
