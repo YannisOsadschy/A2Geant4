@@ -1,3 +1,5 @@
+#include <iostream>
+
 
 //Global definitions
 Double_t vdrift = 354; //cm/ms: 1/10 of what is in A2DriftModel::SetConstants
@@ -105,13 +107,13 @@ void Reconstruct(TString filename){
 	TFile *in = new TFile(filename);
 	TTree *h12 = (TTree*)in->Get("h12");
 	//define variables for input tree information
-	Int_t ntpc;
-	Int_t *itpc = new Int_t[100];
-	Float_t *qtpc = new Float_t[100];
-	Float_t *ttpc = new Float_t[100];
-	Float_t *vertex = new Float_t[3];
-	Float_t *klab = new Float_t[3];
-	Float_t dircos[100][3];
+	Int_t ntpc;							//true: number of electrons per event
+	Int_t *itpc = new Int_t[100];     	//measured: id of pad		
+	Float_t *qtpc = new Float_t[100];  	//measured:something related to the charge 
+	Float_t *ttpc = new Float_t[100];	//measured: time of impact of electrons 
+	Float_t *vertex = new Float_t[3];	//true:  position of hadron
+	Float_t *klab = new Float_t[3];		//true: energy of hadron  
+	Float_t dircos[100][3];				//true: cosine of momentum direction in x,y,z values for each created particle during creation 
 	//set branch addresses for input tree
 	h12->SetBranchAddress("ntpc",&ntpc);
 	h12->SetBranchAddress("itpc",itpc);
@@ -120,6 +122,7 @@ void Reconstruct(TString filename){
 	h12->SetBranchAddress("klab",klab);
 	h12->SetBranchAddress("vertex",vertex);
 	h12->SetBranchAddress("dircos",&dircos);
+
 	//define variables to be used in computations
 	Int_t first_sec, last_sec;
 	Float_t first_time, last_time, charge;
@@ -149,6 +152,7 @@ void Reconstruct(TString filename){
 		for (int j=0;j<ntpc;j++){
 			charge+=qtpc[j];
 		}
+		
 		//get two data points for theta
 		//Note index 0 = most recently saved by simulation = last to occur
 		//index ntpc-1 = first saved by simulation = first to occur
@@ -174,9 +178,10 @@ void Reconstruct(TString filename){
 		energy_rec=GetEnergy(charge);
 		theta_rec=GetTheta(mintime,maxtime,minx,maxx);	
 		//get true variables
-		theta_true=acos(dircos[1][2])*180/3.14;
+		std::cout << klab[2] << std::endl;		
+		theta_true=acos(dircos[0][2])*180/3.14;  //changed 1 to 0, since the hadron is the first particle created in phase space mode
 		z_true=vertex[2];
-		energy_true=klab[1];
+		energy_true=klab[0];			//changed 1 to 0, since the hadron is the first particle created in phase space mode
 		//write to tree
 		goat->Fill();
 	}
