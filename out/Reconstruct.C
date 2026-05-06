@@ -3,8 +3,8 @@
 
 //Global definitions
 Double_t vdrift = 354; //cm/ms: 1/10 of what is in A2DriftModel::SetConstants
-Double_t qeslope = -0.000208; //from output of Calibrate.C
-Double_t qeintercept = -0.89; //from output of Calibrate.C
+Double_t qeslope = -0.0010259; //from output of Calibrate.C		//old value: -0.000208
+Double_t qeintercept = 3.21099; //from output of Calibrate.C	//old value: -0.89
 
 //Attach an anode section ID number to an x coordinate for theta reconstruction
 Double_t GetX(Int_t secID){
