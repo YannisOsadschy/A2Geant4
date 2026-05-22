@@ -217,10 +217,11 @@ int main(int argc,char** argv) {
   A2RunAction* runaction = new A2RunAction;  
   runManager->SetUserAction(runaction);
   A2EventAction* eventaction = new A2EventAction(runaction, pga, argc, argv, detSetup);
+  A2TrackingAction* trackingAction = new A2TrackingAction(eventaction);
   eventaction->SetIsInteractive(isInteractive);
   runManager->SetUserAction(eventaction);
-  runManager->SetUserAction(new A2SteppingAction(detector, eventaction));
-  runManager->SetUserAction(new A2TrackingAction());
+  runManager->SetUserAction(new A2SteppingAction(detector, eventaction, trackingAction));
+  runManager->SetUserAction(trackingAction);
   // Initialize G4 kernel
 //   runManager->Initialize();
     

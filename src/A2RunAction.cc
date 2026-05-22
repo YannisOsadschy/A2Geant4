@@ -5,6 +5,7 @@
 #include "G4RunManager.hh"
 #include "G4UnitsTable.hh"
 
+#include "A2TrueDataAnalyser.hh"
 
 
 A2RunAction::A2RunAction()
@@ -41,5 +42,17 @@ void A2RunAction::EndOfRunAction(const G4Run* aRun)
 
   fEventAction->CloseOutput();
 
+
+  A2TrueDataAnalyser trueDataAnalyser = A2TrueDataAnalyser(std::move(currentRunData));
+
+  trueDataAnalyser.VisualizeTree();
+  trueDataAnalyser.MakeEKinHists(1);
+  trueDataAnalyser.MakeEdepEKinHists(0);
+  trueDataAnalyser.MakePrimaryTrackLengthHists();
+}
+
+RunData& A2RunAction::GetCurrentRunData()
+{
+    return currentRunData;
 }
 

@@ -4,6 +4,8 @@
 
 #include "G4UserSteppingAction.hh"
 
+#include "A2TrackingAction.hh"
+
 class A2DetectorConstruction;
 class A2EventAction;
 class G4Region;
@@ -12,7 +14,7 @@ class G4FastSimulationManager;
 class A2SteppingAction : public G4UserSteppingAction
 {
   public:
-    A2SteppingAction(A2DetectorConstruction*, A2EventAction*);
+    A2SteppingAction(A2DetectorConstruction*, A2EventAction*, A2TrackingAction*);
    ~A2SteppingAction();
 
     void UserSteppingAction(const G4Step*);
@@ -21,7 +23,9 @@ class A2SteppingAction : public G4UserSteppingAction
     A2DetectorConstruction* detector;
     A2EventAction*          eventaction;
     G4Region* fRegion;
-    G4FastSimulationManager* fFSManager;  
+    G4FastSimulationManager* fFSManager;
+    A2TrackingAction* fTrackingAction;
+
 };
 
 

@@ -9,13 +9,17 @@
 #include "A2UserTrackInformation.hh"
 #include "A2PrimaryGeneratorAction.hh"
 
+#include "A2TrueData.hh"
+
 //______________________________________________________________________________
-A2TrackingAction::A2TrackingAction()
+A2TrackingAction::A2TrackingAction(A2EventAction* evt)
 {
     // Constructor.
 
     fPGA = (A2PrimaryGeneratorAction*)
             G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction();
+
+    fEventAction = evt;
 }
 
 //______________________________________________________________________________
@@ -49,6 +53,11 @@ void A2TrackingAction::PreUserTrackingAction(const G4Track* aTrack)
                << G4endl;
         exit(-1);
     }
+    currentTrackData.trackID = aTrack->GetTrackID();
+    currentTrackData.parentTrackID = aTrack->GetParentID();
+    currentTrackData.PDGE = aTrack->GetParticleDefinition()->GetPDGEncoding();
+    currentTrackData.kinEnergy = aTrack->GetKineticEnergy();
+
 }
 
 //______________________________________________________________________________
@@ -78,5 +87,13 @@ void A2TrackingAction::PostUserTrackingAction(const G4Track* aTrack)
             }
         }
     }
+
+    currentTrackData.trackLength = aTrack->GetTrackLength();
+    fEventAction->GetCurrentEventData().tracks.push_back(currentTrackData);
+    currentTrackData.steps.clear();
 }
 
+TrackData& A2TrackingAction::GetCurrentTrackData()
+{
+    return currentTrackData;
+}

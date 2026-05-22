@@ -20,17 +20,19 @@
 #include "G4FastSimulationManagerProcess.hh"
 #include "A2DriftModel.hh"
 
+#include "A2TrueData.hh"
+
 using namespace CLHEP;
 
 ////#include "G4RunManager.hh"
 
 
 
-A2SteppingAction::A2SteppingAction(A2DetectorConstruction* det,
-                                         A2EventAction* evt)
+A2SteppingAction::A2SteppingAction(A2DetectorConstruction* det, A2EventAction* evt, A2TrackingAction* trc)
 {
     detector = det;
     eventaction = evt;
+    fTrackingAction = trc;
     fRegion=NULL;
     fFSManager=NULL;
 }
@@ -44,126 +46,148 @@ A2SteppingAction::~A2SteppingAction()
 
 void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
 {
-  G4Track* track = aStep->GetTrack();
+    G4Track* track = aStep->GetTrack();
 
-  G4StepPoint* startPoint = aStep->GetPreStepPoint();
-  G4StepPoint* endPoint   = aStep->GetPostStepPoint();
+    G4StepPoint* startPoint = aStep->GetPreStepPoint();
+    G4StepPoint* endPoint   = aStep->GetPostStepPoint();
 
-  G4String particleName = track->GetDynamicParticle()->GetParticleDefinition()->GetParticleName();
+    G4String particleName = track->GetDynamicParticle()->GetParticleDefinition()->GetParticleName();
 
-  //G4cout << particleName << "\t" << pds->GetProcessName() << "\t" << startPoint->GetPhysicalVolume()->GetName()<< " to " << endPoint->GetPhysicalVolume()->GetName();
-  //G4cout << "\t" << startPoint->GetPhysicalVolume()->GetLogicalVolume()->GetMaterial()->GetMaterialPropertiesTable()->GetConstProperty("SCINTILLATIONYIELD");
-  //G4cout << G4endl;
-  
-  //Need to add some stuff here for sure! Follow AHeT code
-  if (particleName == "e-") {
-	  //propogate through field
-	  //and see if you hit the anode
-//G4https://root.cern/manual/histograms/histo-trial.png 
-  }
+    //G4cout << particleName << "\t" << pds->GetProcessName() << "\t" << startPoint->GetPhysicalVolume()->GetName()<< " to " << endPoint->GetPhysicalVolume()->GetName();
+    //G4cout << "\t" << startPoint->GetPhysicalVolume()->GetLogicalVolume()->GetMaterial()->GetMaterialPropertiesTable()->GetConstProperty("SCINTILLATIONYIELD");
+    //G4cout << G4endl;
+    
+    //Need to add some stuff here for sure! Follow AHeT code
+    if (particleName == "e-") 
+    {
+        //propogate through field
+        //and see if you hit the anode
+    //G4https://root.cern/manual/histograms/histo-trial.png 
+    }
 
-  if (particleName == "opticalphoton") {
-      G4OpBoundaryProcess* fOpProcess;
+    if (particleName == "opticalphoton") 
+    {
+        G4OpBoundaryProcess* fOpProcess;
 
-      // Retrieve the status of the photon
-      G4OpBoundaryProcessStatus theStatus = Undefined;
+        // Retrieve the status of the photon
+        G4OpBoundaryProcessStatus theStatus = Undefined;
 
-      G4ProcessManager* OpManager =
-              G4OpticalPhoton::OpticalPhoton()->GetProcessManager();
+        G4ProcessManager* OpManager =
+                G4OpticalPhoton::OpticalPhoton()->GetProcessManager();
 
-      if (OpManager) {
-          G4int MAXofPostStepLoops =
-                  OpManager->GetPostStepProcessVector()->entries();
-          G4ProcessVector* fPostStepDoItVector =
-                  OpManager->GetPostStepProcessVector(typeDoIt);
+        if (OpManager) 
+        {
+            G4int MAXofPostStepLoops =
+                    OpManager->GetPostStepProcessVector()->entries();
+            G4ProcessVector* fPostStepDoItVector =
+                    OpManager->GetPostStepProcessVector(typeDoIt);
 
-          for ( G4int i=0; i<MAXofPostStepLoops; i++) {
-              G4VProcess* fCurrentProcess = (*fPostStepDoItVector)[i];
-              fOpProcess = dynamic_cast<G4OpBoundaryProcess*>(fCurrentProcess);
-              if (fOpProcess) { theStatus = fOpProcess->GetStatus(); break;}
-          }
-      }
+            for ( G4int i=0; i<MAXofPostStepLoops; i++) 
+            {
+                G4VProcess* fCurrentProcess = (*fPostStepDoItVector)[i];
+                fOpProcess = dynamic_cast<G4OpBoundaryProcess*>(fCurrentProcess);
+                if (fOpProcess) { theStatus = fOpProcess->GetStatus(); break;}
+            }
+        }
 
-      // Detected by a detector
-      if (theStatus == Detection) {
-          //G4cout << "Detected in " << startPoint->GetPhysicalVolume()->GetName() << "\t" << aStep->GetTotalEnergyDeposit()/eV << G4endl;
+        // Detected by a detector
+        if (theStatus == Detection) 
+        {
+            //G4cout << "Detected in " << startPoint->GetPhysicalVolume()->GetName() << "\t" << aStep->GetTotalEnergyDeposit()/eV << G4endl;
 
-          // Check if the photon hits the detector and process the hit if it does
-          if ( startPoint->GetPhysicalVolume()->GetLogicalVolume()->GetName() == "LogicSiPMT" ) {
+            // Check if the photon hits the detector and process the hit if it does
+            if ( startPoint->GetPhysicalVolume()->GetLogicalVolume()->GetName() == "LogicSiPMT" ) 
+            {
 
-              G4SDManager* SDman = G4SDManager::GetSDMpointer();
-              A2SD* AHe3SD = (A2SD*)SDman->FindSensitiveDetector("AHe3SD");
+                G4SDManager* SDman = G4SDManager::GetSDMpointer();
+                A2SD* AHe3SD = (A2SD*)SDman->FindSensitiveDetector("AHe3SD");
 
-              //if (AHe3SD) AHe3SD->ProcessHits_AHe3(aStep, NULL);
+                //if (AHe3SD) AHe3SD->ProcessHits_AHe3(aStep, NULL);
 
-              // Stop Tracking when it hits the detector's surface
-              //ResetCounters();
-              track->SetTrackStatus(fStopAndKill);
-          }
-      }
-  }
+                // Stop Tracking when it hits the detector's surface
+                //ResetCounters();
+                track->SetTrackStatus(fStopAndKill);
+            }
+        }
+    }
 
-//   G4VPhysicalVolume* volume = track->GetVolume();
-  
-//   // collect energy and track length step by step
-   G4double edep = aStep->GetTotalEnergyDeposit();
-  
-//   G4double stepl = 0.;
+    //   G4VPhysicalVolume* volume = track->GetVolume();
+    
+    //   // collect energy and track length step by step
+    G4double edep = aStep->GetTotalEnergyDeposit();
+    
+    //   G4double stepl = 0.;
 
 
-//force electrons to drift in Time Projection chamber
-if(track->GetDefinition()->GetParticleName()==G4String("e-")){ //only applies to electrons
-	if(fpSteppingManager->GetfCurrentVolume()->GetName()=="HELIUM" && track->GetTrackStatus()!=fStopAndKill){ //check for active electron inside active volume 
-		//G4cout<<"Drift electron..."<<G4endl; //debugging progress message
-		//get the fast simulation manager for the active volume
-		if (!fRegion) fRegion = fpSteppingManager->GetfCurrentVolume()->GetLogicalVolume()->GetRegion();
-		if (!fFSManager) fFSManager = fRegion->GetFastSimulationManager();
-		//breaks for zero eenergy: give just a bit
-		if(track->GetKineticEnergy()==0)track->SetKineticEnergy(1*eV);
-		//G4cout<<"Checking for trigger..."<<G4endl; //debugging progress message
-		if(fFSManager->PostStepGetFastSimulationManagerTrigger(*track)){ //check if Heed process applies
-			G4VParticleChange* fastStep = fFSManager->InvokePostStepDoIt(); //force heed process to occur
-			track->SetTrackStatus(fStopAndKill); //stop particle after running Heed process
-			//do nothing: currently test-running simulation without this
-		}
-	}	
-}
-//stop tracking after the trigger time
-else if(aStep->GetPreStepPoint()->GetGlobalTime()>2*ms)track->SetTrackStatus(fStopAndKill);
-//   if(track->GetDefinition()->GetParticleName()==G4String("pi0"))
-//     {G4cout<<"Got a pi0 "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;track->SetTrackStatus(fStopAndKill);}
-//  if(track->GetDefinition()->GetParticleName()==G4String("pi+"))
-//    {G4cout<<"Got a pi+ "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;track->SetTrackStatus(fStopAndKill);}
-//  if(track->GetDefinition()->GetParticleName()==G4String("mu+"))
-//    {G4cout<<"Got a mu+ "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;track->SetTrackStatus(fStopAndKill);}
- //  if(track->GetDefinition()->GetParticleName()==G4String("pi0"))
-//     {track->SetTrackStatus(fStopAndKill);}
-//  if(track->GetDefinition()->GetParticleName()==G4String("pi+"))
-//    {track->SetTrackStatus(fStopAndKill);}
-//  if(track->GetDefinition()->GetParticleName()==G4String("pi-"))
-//    {track->SetTrackStatus(fStopAndKill);}
-//  if(track->GetDefinition()->GetParticleName()==G4String("mu+"))
-//    {track->SetTrackStatus(fStopAndKill);}
-  //if (track->GetDefinition()->GetPDGCharge() != 0.)
-  // stepl = aStep->GetStepLength();
-  //if(track->GetDefinition()->GetParticleName()==G4Gamma::Gamma()->GetParticleName()){
+    //force electrons to drift in Time Projection chamber
+    if(track->GetDefinition()->GetParticleName()==G4String("e-")){ //only applies to electrons
+        if(fpSteppingManager->GetfCurrentVolume()->GetName()=="HELIUM" && track->GetTrackStatus()!=fStopAndKill){ //check for active electron inside active volume 
+            //G4cout<<"Drift electron..."<<G4endl; //debugging progress message
+            //get the fast simulation manager for the active volume
+            if (!fRegion) fRegion = fpSteppingManager->GetfCurrentVolume()->GetLogicalVolume()->GetRegion();
+            if (!fFSManager) fFSManager = fRegion->GetFastSimulationManager();
+            //breaks for zero eenergy: give just a bit
+            if(track->GetKineticEnergy()==0)track->SetKineticEnergy(1*eV);
+            //G4cout<<"Checking for trigger..."<<G4endl; //debugging progress message
+            if(fFSManager->PostStepGetFastSimulationManagerTrigger(*track)){ //check if Heed process applies
+                G4VParticleChange* fastStep = fFSManager->InvokePostStepDoIt(); //force heed process to occur
+                track->SetTrackStatus(fStopAndKill); //stop particle after running Heed process
+                //do nothing: currently test-running simulation without this
+            }
+        }	
+    }
+    //stop tracking after the trigger time
+    else if(aStep->GetPreStepPoint()->GetGlobalTime()>2*ms)track->SetTrackStatus(fStopAndKill);
+    //   if(track->GetDefinition()->GetParticleName()==G4String("pi0"))
+    //     {G4cout<<"Got a pi0 "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;track->SetTrackStatus(fStopAndKill);}
+    //  if(track->GetDefinition()->GetParticleName()==G4String("pi+"))
+    //    {G4cout<<"Got a pi+ "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;track->SetTrackStatus(fStopAndKill);}
+    //  if(track->GetDefinition()->GetParticleName()==G4String("mu+"))
+    //    {G4cout<<"Got a mu+ "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;track->SetTrackStatus(fStopAndKill);}
+    //  if(track->GetDefinition()->GetParticleName()==G4String("pi0"))
+    //     {track->SetTrackStatus(fStopAndKill);}
+    //  if(track->GetDefinition()->GetParticleName()==G4String("pi+"))
+    //    {track->SetTrackStatus(fStopAndKill);}
+    //  if(track->GetDefinition()->GetParticleName()==G4String("pi-"))
+    //    {track->SetTrackStatus(fStopAndKill);}
+    //  if(track->GetDefinition()->GetParticleName()==G4String("mu+"))
+    //    {track->SetTrackStatus(fStopAndKill);}
+    //if (track->GetDefinition()->GetPDGCharge() != 0.)
+    // stepl = aStep->GetStepLength();
+    //if(track->GetDefinition()->GetParticleName()==G4Gamma::Gamma()->GetParticleName()){
 
-  //G4cout<<track->GetDefinition()->GetParticleName()<< track->GetTrackID()<<" process " <<fpSteppingManager->GetfCurrentProcess()->GetProcessName()<<" in "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;
-  // }
-  //  if(fpSteppingManager->GetfCurrentVolume()->GetName()==G4String("ANOIP"))G4cout<<"OK "<<track->GetDefinition()->GetParticleName()<<G4endl;
-  //if(track->GetDefinition()->GetParticleName()==G4Proton::Proton()->GetParticleName()&&!(fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("msc"))&&!(fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("hIoni"))){
-  // if(fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("msc"))
-  // if(track->GetTrackID()==1&&fpSteppingManager->GetfCurrentVolume()->GetName()!=G4String("World")) G4cout<<track->GetDefinition()->GetParticleName()<< track->GetTrackID()<< " "<<track->GetParentID()<< " "<<track->GetKineticEnergy()<<" process " <<fpSteppingManager->GetfCurrentProcess()->GetProcessName()<<" in "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;
-    //G4cout<<"Secondaries "<<aStep->GetSecondary()->size()<<" "<<aStep->GetfSecondary()<<G4endl;
-  //}
-  //G4cout <<" STEPPING ACTION "<<eventaction->GetNEvent()
-  //  if(eventaction->GetNEvent()==1317){
-  // G4cout<<track->GetDefinition()->GetParticleName()<< track->GetTrackID()<<" process " <<fpSteppingManager->GetfCurrentProcess()->GetProcessName()<<" in "<< fpSteppingManager->GetfCurrentVolume()->GetName()<< " "<<track->GetKineticEnergy()/MeV<<G4endl;
-  // }
+    //G4cout<<track->GetDefinition()->GetParticleName()<< track->GetTrackID()<<" process " <<fpSteppingManager->GetfCurrentProcess()->GetProcessName()<<" in "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;
+    // }
+    //  if(fpSteppingManager->GetfCurrentVolume()->GetName()==G4String("ANOIP"))G4cout<<"OK "<<track->GetDefinition()->GetParticleName()<<G4endl;
+    //if(track->GetDefinition()->GetParticleName()==G4Proton::Proton()->GetParticleName()&&!(fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("msc"))&&!(fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("hIoni"))){
+    // if(fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("msc"))
+    // if(track->GetTrackID()==1&&fpSteppingManager->GetfCurrentVolume()->GetName()!=G4String("World")) G4cout<<track->GetDefinition()->GetParticleName()<< track->GetTrackID()<< " "<<track->GetParentID()<< " "<<track->GetKineticEnergy()<<" process " <<fpSteppingManager->GetfCurrentProcess()->GetProcessName()<<" in "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;
+        //G4cout<<"Secondaries "<<aStep->GetSecondary()->size()<<" "<<aStep->GetfSecondary()<<G4endl;
+    //}
+    //G4cout <<" STEPPING ACTION "<<eventaction->GetNEvent()
+    //  if(eventaction->GetNEvent()==1317){
+    // G4cout<<track->GetDefinition()->GetParticleName()<< track->GetTrackID()<<" process " <<fpSteppingManager->GetfCurrentProcess()->GetProcessName()<<" in "<< fpSteppingManager->GetfCurrentVolume()->GetName()<< " "<<track->GetKineticEnergy()/MeV<<G4endl;
+    // }
 
-  //bug in phot process, can't get rid of gamma with energy 1.2E-5MeV
-  //goes into infinite loop!
-  if(track->GetDefinition()->GetParticleName()==G4Gamma::Gamma()->GetParticleName()&&track->GetKineticEnergy()/MeV<1E-4&&fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("phot"))track->SetTrackStatus(fStopAndKill);
+    //bug in phot process, can't get rid of gamma with energy 1.2E-5MeV
+    //goes into infinite loop!
+    if(track->GetDefinition()->GetParticleName()==G4Gamma::Gamma()->GetParticleName()&&track->GetKineticEnergy()/MeV<1E-4&&fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("phot"))track->SetTrackStatus(fStopAndKill);
+
+
+
+
+
+
+    StepData stepData;
+    stepData.edep = aStep->GetTotalEnergyDeposit();
+    stepData.preKinEnergy = aStep->GetPreStepPoint()->GetKineticEnergy();
+    stepData.postKinEnergy = aStep->GetPostStepPoint()->GetKineticEnergy();
+    //stepData.volumeName = aStep->GetPreStepPoint()->GetPhysicalVolume()->;
+    for (const auto& childTrack : *(aStep->GetSecondary()))
+    {
+        stepData.secondariesTrackID.push_back(childTrack->GetTrackID());
+    }
+    fTrackingAction->GetCurrentTrackData().steps.push_back(stepData);
 }
 
 
