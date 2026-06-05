@@ -184,7 +184,7 @@ int main(int argc,char** argv) {
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
   physicsList->RegisterPhysics(opticalPhysics);
   G4EmLivermorePhysics* lowEMPhysics = new G4EmLivermorePhysics();
-  physicsList->RegisterPhysics(lowEMPhysics);
+  physicsList->ReplacePhysics(lowEMPhysics);   //changed Register to Replace
   G4FastSimulationPhysics* fastSimulationPhysics = new G4FastSimulationPhysics();
   physicsList->RegisterPhysics(fastSimulationPhysics);
   runManager->SetUserInitialization(physicsList);
