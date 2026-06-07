@@ -9,7 +9,9 @@
 A2UserTrackInformation::A2UserTrackInformation()
 {
     // Constructor.
-
+    //comment from Yannis in 2026, to clear up confussion: a better name would be something like fAncestorTrackID, 
+    //because all descendants get the track id of their  related primary track. It is infact not a unique id,
+    //to identify each track. The same applies for fPartID
     fTrackID = 0;
     fPartID = -1;
 }

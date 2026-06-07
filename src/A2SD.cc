@@ -97,16 +97,20 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
 
   // get track information
   G4Track* track = aStep->GetTrack();
-  A2UserTrackInformation* track_info = (A2UserTrackInformation*)
-                                        track->GetUserInformation();
+  //aStep->GetTrack() can be a nullptr, in case of manually sampled TPC electrons, which do not have real track objects, to save overhead,
+  //but they have fake step objects with primary track objects (as nullptr) to work with the normal sd setup.
+ 
+  
+  A2UserTrackInformation* track_info = (A2UserTrackInformation*) track->GetUserInformation();
   //use this to get charge of particle hitting detector: for TPC anode
   G4double qdep = track->GetDynamicParticle()->GetCharge();
+
   //if(volume->GetName().contains("Pb")) G4cout<<volume->GetName()<<" id "<<id <<" "<<mothervolume->GetCopyNo()<<" "<<volume->GetCopyNo()<<" edep "<<edep/MeV<<G4endl;
   //G4bool anodeHit=volume->GetName().contains("HELIUM");
   //if ((fhitID[id]==-1)&&(anodeHit!=1)){ //NOT for helium
- //if((fhitID[id]==-1)||(volume->GetName().contains("Anode")&&fhitID[id]>20)){ //max at 20 electrons per hit   
+  //if((fhitID[id]==-1)||(volume->GetName().contains("Anode")&&fhitID[id]>20)){ //max at 20 electrons per hit   
   if(fhitID[id]==-1){ 
- //if this crystal has already had a hit
+  //if this crystal has already had a hit
     //don't make a new one, add on to old one.   
     //G4cout<<"Make hit "<<id<<G4endl;
     A2Hit* myHit = new A2Hit();
@@ -114,6 +118,7 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     myHit->SetID(id);
     myHit->AddEnergy(edep);
     myHit->AddCharge(qdep); //add the charge of the particle: for TPC anode
+    G4cout<<track_info->GetPartID()<<G4endl;
     myHit->AddPartEnergy(track_info->GetPartID(), edep);
     myHit->AddPartCharge(track_info->GetPartID(), qdep);
     myHit->SetPos(aStep->GetPreStepPoint()->GetPosition());

@@ -57,7 +57,6 @@ void A2TrackingAction::PreUserTrackingAction(const G4Track* aTrack)
     currentTrackData.parentTrackID = aTrack->GetParentID();
     currentTrackData.PDGE = aTrack->GetParticleDefinition()->GetPDGEncoding();
     currentTrackData.kinEnergy = aTrack->GetKineticEnergy();
-
 }
 
 //______________________________________________________________________________
@@ -74,7 +73,6 @@ void A2TrackingAction::PostUserTrackingAction(const G4Track* aTrack)
         // create new track information object
         A2UserTrackInformation* info = (A2UserTrackInformation*)
                                         aTrack->GetUserInformation();
-
         // loop over list of secondaries
         size_t nSeco = secondaries->size();
         for (size_t i = 0; i < nSeco; i++)
@@ -87,7 +85,6 @@ void A2TrackingAction::PostUserTrackingAction(const G4Track* aTrack)
             }
         }
     }
-
     currentTrackData.trackLength = aTrack->GetTrackLength();
     fEventAction->GetCurrentEventData().tracks.push_back(currentTrackData);
     currentTrackData.steps.clear();
