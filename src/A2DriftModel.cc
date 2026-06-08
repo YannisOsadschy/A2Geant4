@@ -63,16 +63,15 @@ void A2DriftModel::DoIt(const G4FastTrack& fastTrack, G4FastStep& fastStep){
 	if ((worldPosition.z() > 115.5)&&(radius<5)) position=false; //electron behind cathode
 	if (position == true){
 		Transport(fastStep, fastTrack, particleName, ekin, time, worldPosition.x(), worldPosition.y(), 
-                worldPosition.z(), direction.x(), direction.y(), direction.z());
+                worldPosition.z());
 	}
 	}
 
 //Generate electron position, time when reaching anode
 void A2DriftModel::Transport(G4FastStep& fastStep,const G4FastTrack& fastTrack, G4String particleName, 
-                            double ekin_keV, double t, double x_mm, double y_mm, double z_mm, 
-                            double dx, double dy, double dz){
+                            double ekin_keV, double t, double x_mm, double y_mm, double z_mm){
 	A2DriftandHitLogic::TransportValues transportValues 
-    = fDrifter.GetTransportValues(particleName, ekin_keV, t, x_mm, y_mm, z_mm, dx, dy, dz);
+    = fDrifter.GetTransportValues(particleName, ekin_keV, t, x_mm, y_mm, z_mm);
     fastStep.SetPrimaryTrackFinalProperTime(transportValues.time);
 	fastStep.SetPrimaryTrackPathLength(transportValues.pathLength*mm); //travel calculated distance
 	fastStep.SetPrimaryTrackFinalPosition(transportValues.position); //final calculated position

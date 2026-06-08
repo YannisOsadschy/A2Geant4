@@ -566,7 +566,7 @@ void A2TPC::MakeField(){
 	G4ProductionCuts* TPCcuts = new G4ProductionCuts(); //create custom cut
 	G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(7*eV,1*GeV); //optimized at 7 eV lower limit
 	//this gives the most linear charge-energy relationship
-    TPCcuts->SetProductionCut(0.01*mm); //added a cut
+    TPCcuts->SetProductionCut(0*mm); //added a cut
 	fRegionActiveGas->SetProductionCuts(TPCcuts); //assign this cut to this region
 	
 	/***** attach model of electron drift to active gas region *****/

@@ -3,13 +3,12 @@
 #include "G4VSensitiveDetector.hh"
 #include "G4TransportationManager.hh" //particle transport
 
-#include "CLHEP/Random/RandGauss.h" //random generation
-#include "CLHEP/Random/RanluxEngine.h"
 #include "TSpline.h"
 
 #include "A2DriftandHitLogic.hh"
 #include "A2UserTrackInformation.hh"
 
+#include <math.h>
 using namespace CLHEP;
 
 /**** Constructor *****/
@@ -36,7 +35,7 @@ A2DriftandHitLogic::~A2DriftandHitLogic()
 
 //Generate electron position, time when reaching anode
 A2DriftandHitLogic::TransportValues A2DriftandHitLogic::GetTransportValues(G4String particleName, double ekin_keV, double t, double x_mm,
-                                            double y_mm, double z_mm, double dx, double dy, double dz)
+                                            double y_mm, double z_mm)
 {
 	//G4cout<<"Transporting delta electron of energy "<< ekin_keV <<" keV"<<G4endl; //debugging message
 	/****transport each electron to anode ****/
@@ -52,11 +51,9 @@ A2DriftandHitLogic::TransportValues A2DriftandHitLogic::GetTransportValues(G4Str
 	G4double sigma_time = long_diff/drift_vel*sqrt(abs(pathLength)); //comes out close enough to ms
 
 	//use random number generation to get values for positions and times
-	RanluxEngine aRandEngine; //make an engine for random number generation
-	RandGauss gaussian(aRandEngine);
-	G4double x_pos = gaussian.shoot(mean_x,sigma_diff); //calculate an x position: mm
-	G4double y_pos = gaussian.shoot(mean_y,sigma_diff); //calc y mm
-	G4double time = gaussian.shoot(mean_t,sigma_time); //calc a time ms
+	G4double x_pos = fGaussian.shoot(mean_x,sigma_diff); //calculate an x position: mm
+	G4double y_pos = fGaussian.shoot(mean_y,sigma_diff); //calc y mm
+	G4double time = fGaussian.shoot(mean_t,sigma_time); //calc a time ms
 
 	//combine position data into a vector
 	G4ThreeVector position = G4ThreeVector(x_pos*mm,y_pos*mm,z_pos*mm);
@@ -77,7 +74,7 @@ A2DriftandHitLogic::TransportValues A2DriftandHitLogic::GetTransportValues(G4Str
 /***** Call a hit in the anode for each electron that reaches it *****/
 void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G4double drift_time, G4int trackID, G4int partID, G4double charge){
 /**** set up touchable in current volume ****/
-	if (!fNaviSetup) {
+    if (!fNaviSetup) {
 		fpNavigator->SetWorldVolume(G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->GetWorldVolume());
 		fpNavigator->LocateGlobalPointAndUpdateTouchableHandle(position,G4ThreeVector(0.,0.,0.),fTouchableHandle,true);
 		fNaviSetup = true;
@@ -111,7 +108,58 @@ void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G
 		//G4cout<<"Calling new hit"<<G4endl;
 		}
 	}
+
+
+//interface to manually start the sample drift process hit chain, for edep ion pairs in a TPC
+void A2DriftandHitLogic::SampleEdep(const G4Step* aStep)
+{   
+    
+    G4double meanNElec = aStep->GetTotalEnergyDeposit() / fWorkFunction;
+    G4double nElec = std::round(fPoisson.shoot(meanNElec));
+    
+    G4ThreeVector unitDirection = aStep->GetDeltaPosition().unit();
+    G4ThreeVector preStepPosition = aStep->GetPreStepPoint()->GetPosition();
+    G4double stepLength = aStep->GetStepLength();
+    G4double deltaTime = aStep->GetDeltaTime();
+    G4double preStepTime = aStep->GetPreStepPoint()->GetGlobalTime();
+    G4int trackID = static_cast<A2UserTrackInformation*>(aStep->GetTrack()->GetUserInformation())->GetTrackID();
+    G4int parentID = static_cast<A2UserTrackInformation*>(aStep->GetTrack()->GetUserInformation())->GetPartID();
+    for (G4int i = 0; i < nElec; ++i)
+    {
+        G4double randFlat = fFlat.shoot();
+        G4ThreeVector positionElec = preStepPosition + randFlat * stepLength * unitDirection;
+        G4double timeElec = preStepTime + randFlat * deltaTime;
+        G4double eKin_keV = 0.001;
+        TransportValues transportValues = GetTransportValues("e-", eKin_keV, timeElec, positionElec.x(),
+                                            positionElec.y(), positionElec.z());
+        ProcessHit(transportValues.position, transportValues.eKin_keV, transportValues.time, trackID, parentID, -1);
+        
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**** Assign gas parameters depending on isotope, pressure of helium ****/
 void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
@@ -163,7 +211,6 @@ void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
 	}
 	G4cout<<name<<" "<<pressure<<" "<<drift_vel<<" "<<trans_diff<<" "<<long_diff<<G4endl;
 }
-
 
 
 

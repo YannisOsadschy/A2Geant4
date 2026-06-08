@@ -5,6 +5,7 @@
 #include "G4UserSteppingAction.hh"
 
 #include "A2TrackingAction.hh"
+#include "A2DriftandHitLogic.hh"
 
 class A2DetectorConstruction;
 class A2EventAction;
@@ -25,7 +26,7 @@ class A2SteppingAction : public G4UserSteppingAction
     G4Region* fRegion;
     G4FastSimulationManager* fFSManager;
     A2TrackingAction* fTrackingAction;
-
+    A2DriftandHitLogic* fDrifter;
 };
 
 

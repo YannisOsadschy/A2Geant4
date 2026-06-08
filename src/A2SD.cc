@@ -118,7 +118,6 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     myHit->SetID(id);
     myHit->AddEnergy(edep);
     myHit->AddCharge(qdep); //add the charge of the particle: for TPC anode
-    G4cout<<track_info->GetPartID()<<G4endl;
     myHit->AddPartEnergy(track_info->GetPartID(), edep);
     myHit->AddPartCharge(track_info->GetPartID(), qdep);
     myHit->SetPos(aStep->GetPreStepPoint()->GetPosition());

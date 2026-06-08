@@ -26,7 +26,7 @@ class A2DriftModel : public G4VFastSimulationModel {
 
     private:
         virtual void Transport(G4FastStep&, const G4FastTrack&, G4String, G4double, G4double,
-                            G4double, G4double, G4double, G4double, G4double, G4double); 
+                            G4double, G4double, G4double); 
                             //move the electron through the active volume
         A2DriftandHitLogic fDrifter;
         

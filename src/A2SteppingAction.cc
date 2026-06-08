@@ -21,6 +21,7 @@
 #include "A2DriftModel.hh"
 
 #include "A2TrueData.hh"
+#include "A2DriftandHitLogic.hh"
 
 using namespace CLHEP;
 
@@ -35,6 +36,7 @@ A2SteppingAction::A2SteppingAction(A2DetectorConstruction* det, A2EventAction* e
     fTrackingAction = trc;
     fRegion=NULL;
     fFSManager=NULL;
+    fDrifter=nullptr;
 }
 
 
@@ -45,7 +47,7 @@ A2SteppingAction::~A2SteppingAction()
 
 
 void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
-{
+{   
     G4Track* track = aStep->GetTrack();
 
     G4StepPoint* startPoint = aStep->GetPreStepPoint();
@@ -173,11 +175,6 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
     //goes into infinite loop!
     if(track->GetDefinition()->GetParticleName()==G4Gamma::Gamma()->GetParticleName()&&track->GetKineticEnergy()/MeV<1E-4&&fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("phot"))track->SetTrackStatus(fStopAndKill);
 
-
-
-
-
-
     StepData stepData;
     stepData.edep = aStep->GetTotalEnergyDeposit();
     stepData.preKinEnergy = aStep->GetPreStepPoint()->GetKineticEnergy();
@@ -188,9 +185,16 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
         stepData.secondariesTrackID.push_back(childTrack->GetTrackID());
     }
     fTrackingAction->GetCurrentTrackData().steps.push_back(stepData);
+    
+
+    G4Region* region = aStep->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume()->GetRegion();
+    if (region->GetName()=="ActiveGas")
+    {
+        if (!fDrifter)
+        {
+            fDrifter = new A2DriftandHitLogic(region);
+
+        };
+        fDrifter->SampleEdep(aStep);
+    }
 }
-
-
-
-
-

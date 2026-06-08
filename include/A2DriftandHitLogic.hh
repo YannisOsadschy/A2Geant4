@@ -8,6 +8,10 @@
 #define A2DriftandHitLogic_h 1
 
 #include "G4ThreeVector.hh"
+#include "CLHEP/Random/RanluxEngine.h"
+#include "CLHEP/Random/RandGauss.h"
+#include "CLHEP/Random/RandPoisson.h"
+#include "CLHEP/Random/RandFlat.h"
 
 class A2DriftandHitLogic
 {
@@ -22,16 +26,24 @@ class A2DriftandHitLogic
         G4ThreeVector position; //mm
     };
     virtual TransportValues GetTransportValues(G4String, G4double, G4double, G4double, G4double, 
-                                            G4double, G4double, G4double, G4double); 
+                                            G4double); 
                                             //move the electron through the active volume
     void ProcessHit(G4ThreeVector, G4double, G4double, G4int, G4int, G4double);
+    void SampleEdep(const G4Step* aStep);
     private:
+
+    CLHEP::RanluxEngine fRandEngine; //make an engine for random number generation
+    CLHEP::RandGauss fGaussian = CLHEP::RandGauss(fRandEngine);
+    CLHEP::RandPoisson fPoisson = CLHEP::RandPoisson(fRandEngine);
+    CLHEP::RandFlat fFlat = CLHEP::RandFlat(fRandEngine);
+
 	void SetConstants(G4Region*);
-	G4double drift_vel; //drift velocity
+    G4double drift_vel; //drift velocity
 	G4double long_diff; //longitudinal diffusion
 	G4double trans_diff; //transverse diffusion
-	G4double fHePressure; //from TPC file -  to pick correct data
-	G4int fHeIsotope;
+	//G4double fHePressure; //from TPC file -  to pick correct data
+	//G4int fHeIsotope;
+
 	G4Step* fFakeStep;
     G4Track* fFakeTrack;
 	G4TouchableHandle fTouchableHandle;
@@ -39,6 +51,7 @@ class A2DriftandHitLogic
 	G4bool fNaviSetup;
 	G4StepPoint* fFakePreStepPoint;
     G4StepPoint* fFakePostStepPoint;
+    G4double fWorkFunction = 30e-6;
 };
 
 #endif
