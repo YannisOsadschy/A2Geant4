@@ -7,6 +7,7 @@
 #include "A2EventAction.hh"
 
 #include "A2TrueData.hh"
+#include "TimeDebugger.hh"
 
 class G4Run;
 
@@ -25,6 +26,8 @@ class A2RunAction : public G4UserRunAction
         A2EventAction *fEventAction;
 
         RunData currentRunData;
+
+        TimeDebugger fTimeDebugger;
 
     public:
         RunData& GetCurrentRunData();

@@ -7,9 +7,11 @@
 
 #include "A2DriftandHitLogic.hh"
 #include "A2UserTrackInformation.hh"
+#include "TimeDebugger.hh"
 
 #include <math.h>
 using namespace CLHEP;
+#include <chrono>
 
 /**** Constructor *****/
 A2DriftandHitLogic::A2DriftandHitLogic(G4Region* actVol)
@@ -37,7 +39,8 @@ A2DriftandHitLogic::~A2DriftandHitLogic()
 A2DriftandHitLogic::TransportValues A2DriftandHitLogic::GetTransportValues(G4String particleName, double ekin_keV, double t, double x_mm,
                                             double y_mm, double z_mm)
 {
-	//G4cout<<"Transporting delta electron of energy "<< ekin_keV <<" keV"<<G4endl; //debugging message
+	auto t0 = std::chrono::high_resolution_clock::now();
+    //G4cout<<"Transporting delta electron of energy "<< ekin_keV <<" keV"<<G4endl; //debugging message
 	/****transport each electron to anode ****/
 	G4double z_pos = -115.5; //set final z position to anode z position
 	G4double pathLength = z_pos - z_mm; //total length to final z position in mm
@@ -67,21 +70,25 @@ A2DriftandHitLogic::TransportValues A2DriftandHitLogic::GetTransportValues(G4Str
     transportValues.pathLength = pathLength;
     transportValues.eKin_keV = ekin_keV;
     transportValues.position = position;
-    
+    auto t1 = std::chrono::high_resolution_clock::now();
+    TimeDebugger::getTransportValuesTime +=std::chrono::duration<double>(t1-t0).count();
     return transportValues;
 }
 
 /***** Call a hit in the anode for each electron that reaches it *****/
 void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G4double drift_time, G4int trackID, G4int partID, G4double charge){
 /**** set up touchable in current volume ****/
+    auto t0 = std::chrono::high_resolution_clock::now();
     if (!fNaviSetup) {
 		fpNavigator->SetWorldVolume(G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->GetWorldVolume());
 		fpNavigator->LocateGlobalPointAndUpdateTouchableHandle(position,G4ThreeVector(0.,0.,0.),fTouchableHandle,true);
 		fNaviSetup = true;
-    	} else {
-      		fpNavigator->
-        	LocateGlobalPointAndUpdateTouchableHandle(position,G4ThreeVector(0.,0.,0.),fTouchableHandle);
-     	}
+	} else {
+  		fpNavigator->
+    	LocateGlobalPointAndUpdateTouchableHandle(position,G4ThreeVector(0.,0.,0.),fTouchableHandle);
+ 	}
+    auto tA = std::chrono::high_resolution_clock::now();
+    TimeDebugger::navigatorTime += std::chrono::duration<double>(tA-t0).count();
     A2UserTrackInformation* anInfo = new A2UserTrackInformation();
     anInfo->SetTrackID(trackID);
     anInfo->SetPartID(partID);
@@ -97,7 +104,8 @@ void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G
   	fFakeStep->SetTotalEnergyDeposit(ekin_keV);
   	//set the time of hit
   	fFakeStep->GetPreStepPoint()->SetGlobalTime(drift_time*ms); 
-
+    auto tB = std::chrono::high_resolution_clock::now();
+    TimeDebugger::inBetweenStuffTime += std::chrono::duration<double>(tB-tA).count();
 	/**** call hit in sensitive detector ****/
   	G4VPhysicalVolume* fCurrentVolume = fFakeStep->GetPreStepPoint()->GetPhysicalVolume();
 	G4VSensitiveDetector* fSensitive;
@@ -108,12 +116,15 @@ void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G
 		//G4cout<<"Calling new hit"<<G4endl;
 		}
 	}
-
+    auto t1 = std::chrono::high_resolution_clock::now();
+    TimeDebugger::processHitTime += std::chrono::duration<double>(t1-t0).count();
+    TimeDebugger::sdStuffTime += std::chrono::duration<double>(t1-tB).count();
+}
 
 //interface to manually start the sample drift process hit chain, for edep ion pairs in a TPC
 void A2DriftandHitLogic::SampleEdep(const G4Step* aStep)
 {   
-    
+    auto t0 = std::chrono::high_resolution_clock::now();
     G4double meanNElec = aStep->GetTotalEnergyDeposit() / fWorkFunction;
     G4double nElec = std::round(fPoisson.shoot(meanNElec));
     
@@ -129,12 +140,13 @@ void A2DriftandHitLogic::SampleEdep(const G4Step* aStep)
         G4double randFlat = fFlat.shoot();
         G4ThreeVector positionElec = preStepPosition + randFlat * stepLength * unitDirection;
         G4double timeElec = preStepTime + randFlat * deltaTime;
-        G4double eKin_keV = 0.001;
+        G4double eKin_keV = 0.000001;
         TransportValues transportValues = GetTransportValues("e-", eKin_keV, timeElec, positionElec.x(),
                                             positionElec.y(), positionElec.z());
         ProcessHit(transportValues.position, transportValues.eKin_keV, transportValues.time, trackID, parentID, -1);
-        
     }
+    auto t1 = std::chrono::high_resolution_clock::now();
+    TimeDebugger::sampleEdepTime += std::chrono::duration<double>(t1-t0).count();
 }
 
 

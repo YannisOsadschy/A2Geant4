@@ -6,6 +6,8 @@
 #include "G4UnitsTable.hh"
 
 #include "A2TrueDataAnalyser.hh"
+#include "TimeDebugger.hh"
+
 
 
 A2RunAction::A2RunAction()
@@ -49,6 +51,24 @@ void A2RunAction::EndOfRunAction(const G4Run* aRun)
   trueDataAnalyser.MakeEKinHists(1);
   trueDataAnalyser.MakeEdepEKinHists(0);
   trueDataAnalyser.MakePrimaryTrackLengthHists();
+
+
+  G4cout<<"sampleEdepTime "<<TimeDebugger::sampleEdepTime<<G4endl;
+  G4cout<<"getTransportValuesTime "<<TimeDebugger::getTransportValuesTime<<G4endl;
+  G4cout<<"processHitTime "<<TimeDebugger::processHitTime<<G4endl;
+  G4cout<<"navigatorTime "<<TimeDebugger::navigatorTime<<G4endl;
+  G4cout<<"inBetweenStuffTime "<<TimeDebugger::inBetweenStuffTime<<G4endl;
+  G4cout<<"sdStuffTime "<<TimeDebugger::sdStuffTime<<G4endl;
+  G4cout<<"A2SDProcessHitsTime "<<TimeDebugger::A2SDProcessHitsTime<<G4endl;
+  G4cout<<"A2SDSetupTime "<<TimeDebugger::A2SDSetup<<G4endl;
+  G4cout<<"A2SDIfTrueTime "<<TimeDebugger::A2SDIfTrue<<G4endl;
+  G4cout<<"A2SDIfFalseTime "<<TimeDebugger::A2SDIfFalse<<G4endl;
+  G4cout<<"falseBlockEdepQdepTime "<<TimeDebugger::falseBlockEdepQdepTime<<G4endl;
+  G4cout<<"falseBlockTPCBlockTime "<<TimeDebugger::falseBlockTPCBlockTime<<G4endl;
+  G4cout<<"line1Time "<<TimeDebugger::line1<<G4endl;
+  G4cout<<"line2Time "<<TimeDebugger::line2<<G4endl;
+  G4cout<<"line3Time "<<TimeDebugger::line3<<G4endl;
+
 }
 
 RunData& A2RunAction::GetCurrentRunData()
