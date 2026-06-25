@@ -1,0 +1,69 @@
+####Initialise
+/run/initialize
+
+##initialize generator settings
+##copy from Phil's AHeT code
+/A2/generator/Mode 1 
+/A2/generator/SetTMin 2 MeV
+/A2/generator/SetTMax 20 MeV
+/A2/generator/SetTargetZ0 0 cm
+/A2/generator/SetTargetThick 2 cm
+/A2/generator/SetTargetRadius 5 cm
+/A2/generator/SetThetaMin 0 deg
+/A2/generator/SetThetaMax 90 deg
+/A2/generator/SetPhiMin 0 deg
+/A2/generator/SetPhiMax 180 deg
+
+##gun settings to choose particle
+/gun/particle alpha
+/gun/position 0 0 0
+
+
+/A2/generator/SetTMin 7.4 MeV
+/A2/generator/SetTMax 7.6 MeV
+/A2/event/setOutputFile out/Cal_7_5.root
+/run/beamOn 100
+
+/A2/event/setOutputFile out/Cal_8_0.root
+/A2/generator/SetTMin 7.9 MeV
+/A2/generator/SetTMax 8.1 MeV
+/run/beamOn 100
+
+/A2/generator/SetTMin 8.4 MeV
+/A2/generator/SetTMax 8.6 MeV
+/A2/event/setOutputFile out/Cal_8_5.root
+/run/beamOn 100
+
+/A2/event/setOutputFile out/Cal_9_0.root
+/A2/generator/SetTMin 8.9 MeV
+/A2/generator/SetTMax 9.1 MeV
+/run/beamOn 100
+
+/A2/generator/SetTMin 9.4 MeV
+/A2/generator/SetTMax 9.6 MeV
+/A2/event/setOutputFile out/Cal_9_5.root
+/run/beamOn 100
+
+/A2/event/setOutputFile out/Cal_10_0.root
+/A2/generator/SetTMin 10.0 MeV
+/A2/generator/SetTMax 10.0 MeV
+/run/beamOn 100
+
+/A2/generator/SetTMin 10.4 MeV
+/A2/generator/SetTMax 10.6 MeV
+/A2/event/setOutputFile out/Cal_10_5.root
+/run/beamOn 100
+
+/A2/event/setOutputFile out/Cal_11_0.root
+/A2/generator/SetTMin 10.9 MeV
+/A2/generator/SetTMax 11.1 MeV
+/run/beamOn 100
+
+/A2/generator/SetTMin 11.4 MeV
+/A2/generator/SetTMax 11.6 MeV
+/A2/event/setOutputFile out/Cal_11_5.root
+/run/beamOn 100
+
+
+
+

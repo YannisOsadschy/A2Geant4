@@ -11,7 +11,7 @@
 TH1D* GetPoint(TString name){
 	TFile *file = new TFile(name);
 	TTree *h12 = (TTree*)file->Get("h12");
-	TH1D *energy_cal = new TH1D("calibrateE","Energy Calibration",45000,-45000,0); //can fix bins later
+	TH1D *energy_cal = new TH1D("calibrateE","Energy Calibration",500000,-500000,0); //can fix bins later
 	//set some branches for tree reading
 	Int_t ntpc;
 	Float_t *qtpc = new Float_t[100];
