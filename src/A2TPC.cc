@@ -770,7 +770,7 @@ void A2TPC::DefineMaterials()
 	//G4double he3density = 0.00495*g/cm3; //30bar, calculated from ideal gas law
 	G4double he3density = (fHePressure/20*bar)*0.0033*g/cm3; //scale Phil's IG calculation according to pressure from parameter file 
 
-	G4Material* GasMix = new G4Material("ATGasMix", he3density, ncomponents = 2,kStateGas,CLHEP::STP_Pressure,fHePressure); 
+	G4Material* GasMix = new G4Material("ATGasMix", he3density, ncomponents = 2,kStateGas,fTemperature,fHePressure); 
     //seems like a error to me CLHEP::STP_Pressure is passed as a temperature i will check this later
 	GasMix->AddElement(ATHe3, 99.95*perCent);                                       //He3
 	// GasMix->AddElement(fNistManager->FindOrBuildElement(2), 99.95*perCent);         //He4
