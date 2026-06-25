@@ -11,18 +11,21 @@
 ##2 = EPGA_FILE         Events aus ROOT-Inputdatei
 ##3 = EPGA_Overlap      Spezialmodus für Overlap/Debugging
 
+/A2/generator/Seed 324343
 /A2/generator/Mode 1
-/A2/generator/SetTMax 10 MeV
-/A2/generator/SetTMin 1 MeV
+/A2/generator/SetTMax 0 MeV
+/A2/generator/SetTMin 10 MeV
 /A2/generator/SetThetaMin 0.0 deg
-/A2/generator/SetThetaMax 20.0 deg
+/A2/generator/SetThetaMax 30.0 deg
 /A2/generator/SetPhiMin 0.0 deg
 /A2/generator/SetPhiMax 180.0 deg
 /A2/generator/SetBeamXSigma 0 mm
 /A2/generator/SetBeamYSigma 0 mm
-/A2/generator/SetTargetZ0 5 cm
-/A2/generator/SetTargetThick 10 cm
-/A2/generator/SetTargetRadius 0 cm
+/A2/generator/SetTargetZ0 0.0 cm
+/A2/generator/SetTargetThick 20.0 cm
+/A2/generator/SetTargetRadius 0.5 cm
+
+/A2/stepping/sampleElectrons false
 
 #####Output
 #Open the output file for writing

@@ -20,6 +20,8 @@
 #include "G4FastSimulationManagerProcess.hh"
 #include "A2DriftModel.hh"
 
+#include "A2SteppingActionMessenger.hh"
+
 #include "A2TrueData.hh"
 #include "A2DriftandHitLogic.hh"
 
@@ -34,9 +36,11 @@ A2SteppingAction::A2SteppingAction(A2DetectorConstruction* det, A2EventAction* e
     detector = det;
     eventaction = evt;
     fTrackingAction = trc;
-    fRegion=NULL;
-    fFSManager=NULL;
-    fDrifter=nullptr;
+    fRegion = NULL;
+    fFSManager = NULL;
+    fDrifter = nullptr;
+    fSampleElectrons = true;
+    fSteppingMessenger = new A2SteppingActionMessenger(this);
 }
 
 
@@ -187,14 +191,22 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
     fTrackingAction->GetCurrentTrackData().steps.push_back(stepData);
     
 
-    G4Region* region = aStep->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume()->GetRegion();
-    if (region->GetName()=="ActiveGas")
+    if (fSampleElectrons)
     {
-        if (!fDrifter)
+        G4Region* region = aStep->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume()->GetRegion();
+        if (region->GetName()=="ActiveGas")
         {
-            fDrifter = new A2DriftandHitLogic(region);
+            if (!fDrifter)
+            {
+                fDrifter = new A2DriftandHitLogic(region);
 
-        };
-        fDrifter->SampleEdep(aStep);
+            };
+            fDrifter->SampleEdep(aStep);
+        }
     }
+}
+
+void A2SteppingAction::SetSampleElectrons(bool sampleElectrons)
+{
+    fSampleElectrons = sampleElectrons;
 }

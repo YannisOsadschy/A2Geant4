@@ -62,7 +62,7 @@ void A2SD::Initialize(G4HCofThisEvent*)
 
 G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
 { 
-  auto t0 = std::chrono::high_resolution_clock::now();
+  //auto t0 = std::chrono::high_resolution_clock::now();
   G4double edep = aStep->GetTotalEnergyDeposit();
   if ((edep/keV == 0.)) return false;      
   // This TouchableHistory is used to obtain the physical volume
@@ -107,8 +107,8 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
   A2UserTrackInformation* track_info = (A2UserTrackInformation*) track->GetUserInformation();
   //use this to get charge of particle hitting detector: for TPC anode
   G4double qdep = track->GetDynamicParticle()->GetCharge();
-  auto tA = std::chrono::high_resolution_clock::now();
-  TimeDebugger::A2SDSetup += std::chrono::duration<double>(tA-t0).count();
+  //auto tA = std::chrono::high_resolution_clock::now();
+  //TimeDebugger::A2SDSetup += std::chrono::duration<double>(tA-t0).count();
   //if(volume->GetName().contains("Pb")) G4cout<<volume->GetName()<<" id "<<id <<" "<<mothervolume->GetCopyNo()<<" "<<volume->GetCopyNo()<<" edep "<<edep/MeV<<G4endl;
   //G4bool anodeHit=volume->GetName().contains("HELIUM");
   //if ((fhitID[id]==-1)&&(anodeHit!=1)){ //NOT for helium
@@ -132,8 +132,8 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
     hitTimes[id].push_back(time); //add first time
     avgTime[id]=time; //average of one entry is itself: use averaging function later
-    auto tB = std::chrono::high_resolution_clock::now();
-    TimeDebugger::A2SDIfTrue += std::chrono::duration<double>(tB-tA).count();
+    //auto tB = std::chrono::high_resolution_clock::now();
+    //TimeDebugger::A2SDIfTrue += std::chrono::duration<double>(tB-tA).count();
   }
   else // This is not new
   {
@@ -145,8 +145,8 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     // set more realistic hit times
     G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
 
-    auto ta = std::chrono::high_resolution_clock::now();
-    TimeDebugger::falseBlockEdepQdepTime += std::chrono::duration<double>(ta-tA).count();
+    //auto ta = std::chrono::high_resolution_clock::now();
+    //TimeDebugger::falseBlockEdepQdepTime += std::chrono::duration<double>(ta-tA).count();
 
     //do something here to fix time for Anode hits???
     if (volume->GetName().contains("TAPS"))
@@ -163,12 +163,17 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     else if (volume->GetName().contains("Anode")) //play with anode times
     {
       hitTimes[id].push_back(time);
-      auto tx = std::chrono::high_resolution_clock::now();
-      TimeDebugger::line1 += std::chrono::duration<double>(tx-ta).count();
+      //auto tx = std::chrono::high_resolution_clock::now();
+      //TimeDebugger::line1 += std::chrono::duration<double>(tx-ta).count();
       
-      avgTime[id]=accumulate(hitTimes[id].begin(), hitTimes[id].end(),0)/hitTimes[id].size();   //identified as the biggest time waster in the code 
-      auto ty = std::chrono::high_resolution_clock::now();
-      TimeDebugger::line2 += std::chrono::duration<double>(ty-tx).count();
+
+
+      //avgTime[id]=accumulate(hitTimes[id].begin(), hitTimes[id].end(),0)/hitTimes[id].size();   //identified as the biggest time waster in the code, is not used anyways at the moment
+
+
+
+      //auto ty = std::chrono::high_resolution_clock::now();
+      //TimeDebugger::line2 += std::chrono::duration<double>(ty-tx).count();
       //(*fCollection)[fhitID[id]]->SetTime(avgTime[id]);
       //if (id==66 && time > (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
       if ( time < (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
@@ -176,16 +181,16 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
 	   //   (*fCollection)[fhitID[id]]->SetTime(time); //set minimum possible time
      //else if (time > (*fCollection)[fhitID[id]]->GetTime())
 	//      (*fCollection)[fhitID[id]]->SetTime(time);
-      auto tb = std::chrono::high_resolution_clock::now();
-      TimeDebugger::falseBlockTPCBlockTime += std::chrono::duration<double>(tb-ta).count();
-      TimeDebugger::line3 += std::chrono::duration<double>(tb-ty).count();
+      //auto tb = std::chrono::high_resolution_clock::now();
+      //TimeDebugger::falseBlockTPCBlockTime += std::chrono::duration<double>(tb-ta).count();
+      //TimeDebugger::line3 += std::chrono::duration<double>(tb-ty).count();
     }
-    auto tC = std::chrono::high_resolution_clock::now();
-    TimeDebugger::A2SDIfFalse += std::chrono::duration<double>(tC-tA).count();
+    //auto tC = std::chrono::high_resolution_clock::now();
+    //TimeDebugger::A2SDIfFalse += std::chrono::duration<double>(tC-tA).count();
   }
   //G4cout<<"done "<<fNhits<<G4endl;
-  auto t1 = std::chrono::high_resolution_clock::now();
-  TimeDebugger::A2SDProcessHitsTime += std::chrono::duration<double>(t1-t0).count();
+  //auto t1 = std::chrono::high_resolution_clock::now();
+  //TimeDebugger::A2SDProcessHitsTime += std::chrono::duration<double>(t1-t0).count();
 
   return true;
 }

@@ -79,6 +79,12 @@ A2DetectorConstruction::A2DetectorConstruction(G4String detSet)
   // default settings for Pizza detector
   fPizzaZ = A2DetPizza::fgDefaultZPos;
 
+  //default settings for TPC;
+  fTPCTemperature = 293.15;
+  fTPCPressure = 20.;
+  fTPCEfield = 200.;
+  fTPCTargetGas = "He4ActiveGas";
+
   //has to be done here in case use new material for target
   DefineMaterials();
 
@@ -226,7 +232,15 @@ G4VPhysicalVolume* A2DetectorConstruction::Construct()
     else if(fUseTarget=="Solid_Oct_18") fTarget=static_cast<A2Target*>(new A2SolidTargetGeneric(A2SolidTargetGeneric::kOct_18));
     else if(fUseTarget=="Polarized") fTarget=static_cast<A2Target*>(new A2PolarizedTarget());
     else if(fUseTarget=="ActiveHe3") fTarget=static_cast<A2Target*>(new A2ActiveHe3());
-    else if(fUseTarget=="TPC") fTarget=static_cast<A2Target*>(new A2TPC()); //NEW: adding TPC
+    else if(fUseTarget=="TPC") //NEW: adding TPC
+    {
+        A2TPC* tpcTarget = new A2TPC();
+        tpcTarget->SetHeMaterial(fTPCTargetGas);
+        tpcTarget->SetTemperature(fTPCTemperature);
+        tpcTarget->SetHePressure(fTPCPressure);
+        tpcTarget->SetEfield(fTPCEfield);
+        fTarget = static_cast<A2Target*>(tpcTarget);
+    }
     else{G4cerr<<"A2DetectorConstruction::Construct() Target type does not exist. See DetectorSetup.mac or README"<<G4endl;exit(1);}
     fTarget->SetMaterial(fTargetMaterial);
     if (fTargetLength)

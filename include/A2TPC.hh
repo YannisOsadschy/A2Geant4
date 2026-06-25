@@ -43,6 +43,10 @@ public: //declare all public functions
 	void DefineMaterials();
 	void ReadParameters(const char*);
 	void SetIsOverlapVol(G4int isOv){ fIsOverlapVol = isOv; }
+    void SetHePressure(G4double pressure){fHePressure=pressure;}
+    void SetHeMaterial(G4String material){fHeMaterial=material;}
+    void SetEfield(G4double Efield){fEfield=Efield;}
+    void SetTemperature(G4double temperature){fTemperature=temperature;}
 
 private: //private declarations
 
@@ -128,9 +132,11 @@ private: //private declarations
 	G4double fCathodeDistance;
 	G4double fWireThickness;
 	G4double fWireSpacing;
-	G4int fHeIsotope;
+	//G4int fHeIsotope; active target gas is now set in the detectormessenger not the data file
 	G4double fHePressure;
 	G4String fHeMaterial;
+    G4double fEfield; //V/mm
+    G4double fTemperature; //K
 
 	//for placing anode
 	//G4VPhysicalVolume** fAnodePhysi;

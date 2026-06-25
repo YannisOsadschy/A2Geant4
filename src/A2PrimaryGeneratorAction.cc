@@ -1,4 +1,3 @@
-
 #include "A2PrimaryGeneratorAction.hh"
 
 #include "A2PrimaryGeneratorMessenger.hh"
@@ -81,8 +80,8 @@ A2PrimaryGeneratorAction::~A2PrimaryGeneratorAction()
 
 
 void A2PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
-{
-  //This function is called at the begining of event
+{ 
+    //This function is called at the begining of event
   Float_t Mass;
   Float_t P;
   G4ThreeVector pvec;

@@ -11,6 +11,7 @@ class A2DetectorConstruction;
 class A2EventAction;
 class G4Region;
 class G4FastSimulationManager;
+class A2SteppingActionMessenger;
 
 class A2SteppingAction : public G4UserSteppingAction
 {
@@ -19,6 +20,8 @@ class A2SteppingAction : public G4UserSteppingAction
    ~A2SteppingAction();
 
     void UserSteppingAction(const G4Step*);
+
+    void SetSampleElectrons(bool);
     
   private:
     A2DetectorConstruction* detector;
@@ -27,6 +30,8 @@ class A2SteppingAction : public G4UserSteppingAction
     G4FastSimulationManager* fFSManager;
     A2TrackingAction* fTrackingAction;
     A2DriftandHitLogic* fDrifter;
+    A2SteppingActionMessenger* fSteppingMessenger;
+    bool fSampleElectrons;
 };
 
 

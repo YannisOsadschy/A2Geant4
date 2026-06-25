@@ -63,7 +63,8 @@ A2DetectorMessenger::A2DetectorMessenger(
   fTargetMatCmd->SetGuidance("Select the target material");
   fTargetMatCmd->SetParameterName("TargetMaterial",false);
   fTargetMatCmd->AvailableForStates(cmdState,G4State_Idle);
-
+  //is not used in the Tpc or ActiveHe3 classes even though this commands sets a field in A2target, 
+  //from which both Tpc and ActiveHe3 inherit.
   fTargetLengthCmd = new G4UIcmdWithADoubleAndUnit("/A2/det/setTargetLength",this);
   fTargetLengthCmd->SetGuidance("Set target cell length");
   fTargetLengthCmd->SetParameterName("TargetLength",false);
@@ -172,8 +173,30 @@ A2DetectorMessenger::A2DetectorMessenger(
   fPizzaZCmd->SetParameterName("PizzaZ",false);
   fPizzaZCmd->SetUnitCategory("Length");
   fPizzaZCmd->AvailableForStates(cmdState,G4State_Idle);
-}
+  
+  fTPCtemperatureCmd = new G4UIcmdWithADoubleAndUnit("/A2/det/setTPCtemperature",this);
+  fTPCtemperatureCmd->SetGuidance("Set temperature of TPCs active gas");
+  fTPCtemperatureCmd->SetParameterName("TPCtemperature", false);
+  fTPCtemperatureCmd->SetUnitCategory("Temperature");
+  fTPCtemperatureCmd->AvailableForStates(cmdState,G4State_Idle);
+  
+  fTPCpressureCmd = new G4UIcmdWithADoubleAndUnit("/A2/det/setTPCpressure",this);
+  fTPCpressureCmd->SetGuidance("Set pressure of TPCs active gas [bar]");
+  fTPCpressureCmd->SetParameterName("TPCpressure",false);
+  fTPCpressureCmd->SetUnitCategory("Pressure");
+  fTPCpressureCmd->AvailableForStates(cmdState,G4State_Idle);
 
+  fTPCefieldCmd = new G4UIcmdWithADoubleAndUnit("/A2/det/setTPCefield",this);
+  fTPCefieldCmd->SetGuidance("Set constant Efield in the TPC [V/mm]");
+  fTPCefieldCmd->SetParameterName("Efield",false);
+  fTPCefieldCmd->SetUnitCategory("Electric field");
+  fTPCefieldCmd->AvailableForStates(cmdState,G4State_Idle);
+
+  fTPCMaterialCmd = new G4UIcmdWithAString("/A2/det/setTPCMaterial",this);
+  fTPCMaterialCmd->SetGuidance("Set active Gas (available options: He3ActiveGas, He4ActiveGas)");
+  fTPCMaterialCmd->SetParameterName("activeGas",false);
+  fTPCMaterialCmd->AvailableForStates(cmdState,G4State_Idle);
+}
 
 
 A2DetectorMessenger::~A2DetectorMessenger()
@@ -203,6 +226,10 @@ A2DetectorMessenger::~A2DetectorMessenger()
   delete fTargetMagneticFieldCmd;
   delete fHemiGapCmd;
   delete fCBCrystGeoCmd;
+  delete fTPCtemperatureCmd;
+  delete fTPCpressureCmd;
+  delete fTPCefieldCmd;
+  delete fTPCMaterialCmd;
  }
 
 
@@ -288,7 +315,17 @@ void A2DetectorMessenger::SetNewValue(G4UIcommand* command,G4String newValue)
   
   if( command == fUseTOFCmd )
     { fA2Detector->SetUseTOF(fUseTOFCmd->GetNewIntValue(newValue));}
+
+  if( command == fTPCtemperatureCmd )
+    { fA2Detector->SetTPCtemperature(fTPCtemperatureCmd->GetNewDoubleValue(newValue));}
+
+  if( command == fTPCpressureCmd)
+    { fA2Detector->SetTPCpressure(fTPCpressureCmd->GetNewDoubleValue(newValue));}
+  
+  if( command == fTPCefieldCmd )
+    { fA2Detector->SetTPCefield(fTPCefieldCmd->GetNewDoubleValue(newValue));}
+  
+  if( command == fTPCMaterialCmd )
+    { fA2Detector->SetTPCtargetGas(newValue);}
   
  }
-
-

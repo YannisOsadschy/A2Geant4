@@ -44,15 +44,14 @@ void A2RunAction::EndOfRunAction(const G4Run* aRun)
 
   fEventAction->CloseOutput();
 
-
   A2TrueDataAnalyser trueDataAnalyser = A2TrueDataAnalyser(std::move(currentRunData));
 
   trueDataAnalyser.VisualizeTree();
   trueDataAnalyser.MakeEKinHists(1);
   trueDataAnalyser.MakeEdepEKinHists(0);
   trueDataAnalyser.MakePrimaryTrackLengthHists();
-
-
+  
+  /*
   G4cout<<"sampleEdepTime "<<TimeDebugger::sampleEdepTime<<G4endl;
   G4cout<<"getTransportValuesTime "<<TimeDebugger::getTransportValuesTime<<G4endl;
   G4cout<<"processHitTime "<<TimeDebugger::processHitTime<<G4endl;
@@ -68,6 +67,7 @@ void A2RunAction::EndOfRunAction(const G4Run* aRun)
   G4cout<<"line1Time "<<TimeDebugger::line1<<G4endl;
   G4cout<<"line2Time "<<TimeDebugger::line2<<G4endl;
   G4cout<<"line3Time "<<TimeDebugger::line3<<G4endl;
+  */
 
 }
 

@@ -172,6 +172,11 @@ Command                              | Meaning
 `/A2/event/setOutputFile ouput.root` | set the tracked-event output file
 `/A2/event/storePrimaries false`     | disable storage of primary particle indices
 
+## Stepping
+Command                              | Meaning
+:----------------------------------- |:-------
+`/A2/stepping/sampleElectrons`       | sample additional TPC electrons depending on the deposited energy in a step (false=off, true=on)
+
 ## Detector setup commands
 
 ### Crystal Ball
@@ -252,11 +257,14 @@ Command                                        | Meaning
 `/A2/det/setTargetMagneticFieldMap map.dat.xz` | magnetic field map (data/wouter_field_map.dat.xz, data/field_map_jul_13_pos.dat.xz)
 
 ### Active Targets
-Command                        | Meaning
-:----------------------------- |:-------
-`/A2/det/setTarget ActiveHe3`  | active helium target
-`/A2/det/setTarget TPC`        | time projection chamber
-
+Command                                     | Meaning
+:-----------------------------------        |:-------
+`/A2/det/setTarget ActiveHe3`               | active helium target
+`/A2/det/setTarget TPC`                     | time projection chamber 
+`/A2/det/setTPCtemperature 293.15 kelvin`   | temperature of the active gas             (works only for A2TPC)
+`/A2/det/setTPCpressure 10. bar`            | pressure of the active gas                (works only for A2TPC)
+`/A2/det/setTPCefield 100000. V/m`          | constant electric field inside the TPC    (works only for A2TPC)
+`/A2/det/setTPCMaterial He4ActiveGas`       | selection of active gas                   (works only for A2TPC)
 
 ### General Target Options
 Command                        | Meaning

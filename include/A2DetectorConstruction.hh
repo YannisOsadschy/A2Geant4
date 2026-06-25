@@ -68,6 +68,19 @@ class A2DetectorConstruction : public G4VUserDetectorConstruction
   void SetPIDRotation(G4double rot){fPIDRotation=rot;}
   void SetPizzaZ(G4double zz){fPizzaZ=zz;}
 
+  void SetTPCtemperature(G4double temperature){fTPCTemperature=temperature;}
+  void SetTPCpressure(G4double pressure){fTPCPressure=pressure;}
+  void SetTPCefield(G4double Efield){fTPCEfield=Efield;}
+  void SetTPCtargetGas(G4String targetGas)
+  {
+    if (targetGas=="He3ActiveGas" || targetGas=="He4ActiveGas") fTPCTargetGas=targetGas;
+    else 
+    {
+      G4cout << targetGas << "is not a supported active target material" << G4endl;
+      exit(0);
+    }
+  }
+
   A2Target* GetTarget(){return fTarget;}
 
   G4int GetNToFbars(){
@@ -139,6 +152,13 @@ public:
 
   // Pizza setup
   G4double fPizzaZ;
+
+  //TPC setup
+  G4double fTPCTemperature;
+  G4double fTPCPressure;
+  G4double fTPCEfield;
+  G4String fTPCTargetGas; 
+
 
 private:
     
