@@ -4,6 +4,7 @@
 #include "G4Track.hh"
 #include "G4TrackingManager.hh"
 #include "G4RunManager.hh"
+#include "G4TouchableHandle.hh"
 
 #include "A2TrackingAction.hh"
 #include "A2UserTrackInformation.hh"
@@ -57,6 +58,13 @@ void A2TrackingAction::PreUserTrackingAction(const G4Track* aTrack)
     currentTrackData.parentTrackID = aTrack->GetParentID();
     currentTrackData.PDGE = aTrack->GetParticleDefinition()->GetPDGEncoding();
     currentTrackData.kinEnergy = aTrack->GetKineticEnergy();
+        
+    const G4TouchableHandle& touchable = aTrack->GetTouchableHandle();
+    currentTrackData.iVolumeName = touchable->GetVolume()->GetName();
+    const G4ThreeVector& iPosition = touchable->GetHistory()->GetTopTransform().TransformPoint(aTrack->GetPosition());
+    currentTrackData.iX = iPosition.x(); 
+    currentTrackData.iY = iPosition.y(); 
+    currentTrackData.iZ = iPosition.z();
 }
 
 //______________________________________________________________________________
@@ -86,6 +94,14 @@ void A2TrackingAction::PostUserTrackingAction(const G4Track* aTrack)
         }
     }
     currentTrackData.trackLength = aTrack->GetTrackLength();
+
+    const G4TouchableHandle& touchable = aTrack->GetTouchableHandle();
+    currentTrackData.fVolumeName = touchable->GetVolume()->GetName();
+    const G4ThreeVector& fPosition = touchable->GetHistory()->GetTopTransform().TransformPoint(aTrack->GetPosition());
+    currentTrackData.fX = fPosition.x(); 
+    currentTrackData.fY = fPosition.y(); 
+    currentTrackData.fZ = fPosition.z();
+
     fEventAction->GetCurrentEventData().tracks.push_back(currentTrackData);
     currentTrackData.steps.clear();
 }

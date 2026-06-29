@@ -6,18 +6,26 @@
 
 #include "A2TrueData.hh"
 
+
+
 class A2TrueDataAnalyser
 {
     public:
         explicit A2TrueDataAnalyser(RunData&& runData);    
         ~A2TrueDataAnalyser();
         void VisualizeTree(bool all = 0) const;
-        void MakeEKinHists(int chosenDepth) const;  // -1:all, 0:only primaries, 1:only secondaries, ...
-        void MakeEdepEKinHists(int chosenDepth) const; // -1:all, 0:only primaries, 1:only secondaries, ...
-        void MakePrimaryTrackLengthHists() const;
+        void MakeEKinHists(std::size_t chosenLayer = allLayers) const;  
+        // default: all layers are selected, 0:only primaries, 1:only secondaries, ...
+        void MakeEdepEKinHists(std::size_t chosenLayer = allLayers) const; 
+        // default: all layers are selected, 0:only primaries, 1:only secondaries, ...
+        void MakePrimaryTrackInfoHists(std::size_t chosenLayer = allLayers) const;
     
     private:
-        const RunData fRunData;     //copy instead of reference for later seperation of sim and ana
+        static constexpr std::size_t allLayers = std::numeric_limits<std::size_t>::max();      
+        //used to select all layers if a function requires the selction of a specific layer
+        static constexpr std::size_t noDepthLimit = std::numeric_limits<std::size_t>::max();   
+        //used to to select no premature stopping of recursion if a function requires a max recursion depth
+        const RunData fRunData;   //copy instead of reference for later seperation of sim and ana
         std::unordered_map<int, std::size_t> MakeTrackLookUpMap(const EventData& event) const;
         std::unordered_map<int, std::vector<int>> MakeChildTrackMap(const EventData& event) const;
 
@@ -35,11 +43,11 @@ class A2TrueDataAnalyser
         void ParseTrackTree( int trackID,
                             const std::unordered_map<int, std::vector<int>>& childTrackMap,
                             const Func& func,
-                            std::size_t maxDepth = -1,          //terminationDepth default: no temernationDepth
-                            std::size_t depth = 0 ) const       //currentDepth
+                            std::size_t maxDepth = noDepthLimit,   //terminationDepth default: no temernationDepth
+                            std::size_t depth = 0 ) const          //currentDepth
                                                                  
             {
-                if (maxDepth == -1 || maxDepth >= depth )
+                if ( depth<=maxDepth )
                 {
                     func(trackID,depth);
 

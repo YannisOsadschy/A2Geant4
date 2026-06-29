@@ -201,8 +201,12 @@ void A2EventAction::EndOfEventAction(const G4Event* evt)
     //                                 pVisManager->Draw(*trj,100);
     //       }
   // }
-
-    frunAct->GetCurrentRunData().events.push_back(currentEventData);
+    if (frunAct->GetCollectRunData())
+    {
+        //in case the true data collection is deativated the stepping-, tracking-, and eventdata is just overwirtting per action and not safed in runData to save memory.
+        //idealy one would deativate the collection completely but I cant be bothered right now.
+        frunAct->GetCurrentRunData().events.push_back(currentEventData);
+    }
     currentEventData.tracks.clear();        
 }  
 

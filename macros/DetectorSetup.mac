@@ -49,7 +49,7 @@
 #/A2/det/useTarget ActiveHe3
 /A2/det/useTarget TPC
 /A2/det/setTPCtemperature 293.15 kelvin
-/A2/det/setTPCpressure 10. bar
+/A2/det/setTPCpressure 20. bar
 /A2/det/setTPCefield 100000. V/m
 /A2/det/setTPCMaterial He4ActiveGas
 #/A2/det/targetMaterial G4_lH2

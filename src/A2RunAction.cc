@@ -1,5 +1,6 @@
 
 #include "A2RunAction.hh"
+#include "A2RunActionMessenger.hh"
 
 #include "G4Run.hh"
 #include "G4RunManager.hh"
@@ -13,6 +14,8 @@
 A2RunAction::A2RunAction()
 {
   fEventAction=NULL;
+  fCollectRunData=false;
+  fRunMessenger=new A2RunActionMessenger(this);
 }
 
 
@@ -43,13 +46,16 @@ void A2RunAction::EndOfRunAction(const G4Run* aRun)
   if (NbOfEvents == 0) return;
 
   fEventAction->CloseOutput();
+  if(fCollectRunData)
+  {
+    A2TrueDataAnalyser trueDataAnalyser = A2TrueDataAnalyser(std::move(currentRunData));
+    //trueDataAnalyser.VisualizeTree();
+    trueDataAnalyser.MakePrimaryTrackInfoHists(0);
+    //trueDataAnalyser.MakeEKinHists(1);
+    //trueDataAnalyser.MakeEdepEKinHists(0);
+  }
 
-  A2TrueDataAnalyser trueDataAnalyser = A2TrueDataAnalyser(std::move(currentRunData));
-
-  trueDataAnalyser.VisualizeTree();
-  trueDataAnalyser.MakeEKinHists(1);
-  trueDataAnalyser.MakeEdepEKinHists(0);
-  trueDataAnalyser.MakePrimaryTrackLengthHists();
+  
   
   /*
   G4cout<<"sampleEdepTime "<<TimeDebugger::sampleEdepTime<<G4endl;

@@ -90,7 +90,7 @@ void A2TrueDataAnalyser::VisualizeTree(bool all) const
     out.close();
 }
 
-void A2TrueDataAnalyser::MakeEKinHists(int chosenDepth) const
+void A2TrueDataAnalyser::MakeEKinHists(std::size_t chosenLayer) const
 {
     std::vector<double> selectedEKins;
     std::vector<int> selectedTrackIDs;
@@ -102,10 +102,10 @@ void A2TrueDataAnalyser::MakeEKinHists(int chosenDepth) const
         std::unordered_map<int, std::vector<int>> childTrackMap = MakeChildTrackMap(event);
         const std::vector<TrackData>& tracks = event.tracks;
 
-        auto fillEnergies = [   &trackLookUpMap, &tracks, &chosenDepth, &selectedEKins, 
+        auto fillEnergies = [   &trackLookUpMap, &tracks, &chosenLayer, &selectedEKins, 
                                 &selectedTrackIDs, &selectedParentTrackIDs, &selectedPDGEs](int trackID, std::size_t depth)
         {
-            if (chosenDepth==-1 || depth==chosenDepth)
+            if (chosenLayer == allLayers || depth==chosenLayer)
             {
                 selectedEKins.push_back(tracks[trackLookUpMap.at(trackID)].kinEnergy);
                 selectedParentTrackIDs.push_back(tracks[trackLookUpMap.at(trackID)].parentTrackID);
@@ -121,11 +121,11 @@ void A2TrueDataAnalyser::MakeEKinHists(int chosenDepth) const
                 ParseTrackTree( track.trackID,
                                 childTrackMap,
                                 fillEnergies,
-                                chosenDepth );
+                                chosenLayer );  //chosenLayer passed as maxDepth, to stop recursion after reaching the chosen layer
             }
         }
     }
-    TFile file("data1.root", "Recreate");
+    TFile file("Ekin.root", "Recreate");
     double eKin;
     int ID;
     int parentID;
@@ -148,7 +148,7 @@ void A2TrueDataAnalyser::MakeEKinHists(int chosenDepth) const
     file.Close();
 }
 
-void A2TrueDataAnalyser::MakeEdepEKinHists(int chosenDepth) const
+void A2TrueDataAnalyser::MakeEdepEKinHists(std::size_t chosenLayer) const
 {   
     std::vector<double> edeps;
     std::vector<double> sumChildrenEKins;
@@ -164,11 +164,11 @@ void A2TrueDataAnalyser::MakeEdepEKinHists(int chosenDepth) const
         const std::vector<TrackData>& tracks = event.tracks;
 
         auto fillEnergyComparissons = [ &trackLookUpMap, &childTrackMap, &tracks, 
-                                        &chosenDepth, &sumChildrenEKins, &eKins, &edeps, &NSteps, &NSecondaries, this ]
+                                        &chosenLayer, &sumChildrenEKins, &eKins, &edeps, &NSteps, &NSecondaries, this ]
                                             (int trackID, std::size_t depth)
         {
             
-            if (chosenDepth==-1 || depth==chosenDepth)
+            if (chosenLayer==allLayers || depth==chosenLayer)
             {   
                 edeps.push_back(GetEdepTrack(tracks[trackLookUpMap.at(trackID)]));
                 eKins.push_back(tracks[trackLookUpMap.at(trackID)].kinEnergy);
@@ -196,7 +196,7 @@ void A2TrueDataAnalyser::MakeEdepEKinHists(int chosenDepth) const
                 ParseTrackTree( track.trackID,
                                 childTrackMap,
                                 fillEnergyComparissons,
-                                chosenDepth );
+                                chosenLayer );  //chosenLayer passed as maxDepth, to stop recursion after reaching the chosen layer
             }
         }
         int NLeaf = 0;
@@ -221,7 +221,7 @@ void A2TrueDataAnalyser::MakeEdepEKinHists(int chosenDepth) const
         NLeafs.push_back(NLeaf);
 
     }
-    TFile file("data2.root", "Recreate");
+    TFile file("edepEkin.root", "Recreate");
     double edep;
     double sumChildrenEKin;
     double eKin;
@@ -249,37 +249,76 @@ void A2TrueDataAnalyser::MakeEdepEKinHists(int chosenDepth) const
     file.Close();
 }
 
-void A2TrueDataAnalyser::MakePrimaryTrackLengthHists() const
-{
-    std::vector<double> trackLengths;
-    std::vector<double> eKins;
+void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) const
+{   
+    int PDGE;
+    std::string iVolumeName;
+    std::string fVolumeName;
+    double iX;
+    double iY;
+    double iZ;
+    double fX;
+    double fY;
+    double fZ;
+    double kinEnergy;
+    double trackLength;
+
+    TFile file("tracks.root", "Recreate");
+    TTree tree("tree", "energy comparisson");
+    tree.Branch("PDGE", &PDGE);
+    tree.Branch("initialVolumeName", &iVolumeName);
+    tree.Branch("finalVolumeName", &fVolumeName);
+    tree.Branch("iX", &iX);
+    tree.Branch("iY", &iY);
+    tree.Branch("iZ", &iZ);
+    tree.Branch("fX", &fX);
+    tree.Branch("fY", &fY);
+    tree.Branch("fZ", &fZ);
+    tree.Branch("Ekin", &kinEnergy);
+    tree.Branch("trackLength", &trackLength);
+    
     for (auto& event : fRunData.events)
-    {
+    {   
+        std::unordered_map<int, std::size_t> trackLookUpMap = MakeTrackLookUpMap(event);
+        std::unordered_map<int, std::vector<int>> childTrackMap = MakeChildTrackMap(event);
+        const std::vector<TrackData>& tracks = event.tracks;
+
+        auto fillTrackInfo = [ &trackLookUpMap, &childTrackMap, &tracks, 
+                               &chosenLayer, &PDGE, &iVolumeName, &fVolumeName,
+                               &iX, &iY, &iZ, &fX, &fY, &fZ, &kinEnergy,
+                               &trackLength, &tree, this ]
+                                            (int trackID, std::size_t depth)
+        {
+            
+            if (chosenLayer==allLayers || depth==chosenLayer)
+            {   
+                const TrackData& track = tracks[trackLookUpMap.at(trackID)];
+                PDGE = track.PDGE;
+                iVolumeName = track.iVolumeName;
+                fVolumeName = track.fVolumeName;
+                iX = track.iX;
+                iY = track.iY;
+                iZ = track.iZ;
+                fX = track.fX;
+                fY = track.fY;
+                fZ = track.fZ;
+                kinEnergy = track.kinEnergy;
+                trackLength = track.trackLength;
+                tree.Fill();
+            }
+        }; 
+
         for (const auto& track : event.tracks)
         {
             if (track.parentTrackID == 0)
             {   
-                trackLengths.push_back(track.trackLength);
-                eKins.push_back(track.kinEnergy);
+                ParseTrackTree( track.trackID,
+                                childTrackMap,
+                                fillTrackInfo,
+                                chosenLayer );  //chosenLayer passed as maxDepth, to stop recursion after reaching the chosen layer
             }
         }
     }
-    TFile file("data3.root", "Recreate");
-    double eKin;
-    double trackLength;
-    TTree tree("tree", "trackLength");
-    tree.Branch("EKin", &eKin);
-    tree.Branch("trackLength", &trackLength);
-    for (size_t i = 0; i < eKins.size(); ++i)
-    {
-        eKin = eKins[i];
-        trackLength = trackLengths[i];
-
-        tree.Fill();
-    }
     tree.Write();
     file.Close();
-
 }
-
-

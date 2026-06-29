@@ -2,7 +2,6 @@
 #include "A2SteppingActionMessenger.hh"
 #include "A2SteppingAction.hh"
 
-#include "A2SteppingAction.hh"
 #include "G4UIdirectory.hh"
 #include "G4UIcmdWithABool.hh"
 #include "globals.hh"

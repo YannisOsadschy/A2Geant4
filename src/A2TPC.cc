@@ -234,7 +234,7 @@ void A2TPC::MakeVessel(){
                  "ConeLogic");
 	//helium
 	fVesselHeLogic = new G4LogicalVolume
-		(fVesselHe,
+        (fVesselHe,
 		 fNistManager->FindOrBuildMaterial(fHeMaterial),
 		 "VesselHeLogic");
 	//extension cells
@@ -716,11 +716,6 @@ void A2TPC::ReadParameters(const char* file){
 /***** this function defines the materials used to build the target ******/
 void A2TPC::DefineMaterials()
 {
-	G4cout << fHeMaterial << G4endl;
-    G4cout << fHePressure/bar << G4endl;
-    G4cout << fEfield/(volt/mm) << G4endl;
-    G4cout << fTemperature/kelvin << G4endl;
-    
     
     G4double density, fractionmass;
 	G4int ncomponents;
@@ -768,10 +763,9 @@ void A2TPC::DefineMaterials()
 	//G4double he3density = 0.0033*g/cm3; //20bar, calculated from ideal gas law   //needs to be checked
 	//G4double he3density = 0.004125*g/cm3; //25bar, calculated from ideal gas law
 	//G4double he3density = 0.00495*g/cm3; //30bar, calculated from ideal gas law
-	G4double he3density = (fHePressure/20*bar)*0.0033*g/cm3; //scale Phil's IG calculation according to pressure from parameter file 
+	G4double he3density = (fHePressure/(20*bar))*0.0033*g/cm3; //scale Phil's IG calculation according to pressure from parameter file 
 
 	G4Material* GasMix = new G4Material("ATGasMix", he3density, ncomponents = 2,kStateGas,fTemperature,fHePressure); 
-    //seems like a error to me CLHEP::STP_Pressure is passed as a temperature i will check this later
 	GasMix->AddElement(ATHe3, 99.95*perCent);                                       //He3
 	// GasMix->AddElement(fNistManager->FindOrBuildElement(2), 99.95*perCent);         //He4
 	GasMix->AddElement(fNistManager->FindOrBuildElement(7), 0.05*perCent);           //N
@@ -779,26 +773,26 @@ void A2TPC::DefineMaterials()
 	//----! IMPORTANT! Epoxy CURRENTLY TAKEN FROM A2 SIMULATION,------------------
 	//NO IDEA WHETHER IT IS CORRECT OR NOT
 
-	G4Material* He3GasPure = new G4Material("He3GasPure", he3density, ncomponents = 1,kStateGas, fTemperature,fHePressure); //before change: CLHEP::STP_Temperature
+	G4Material* He3GasPure = new G4Material("He3GasPure", he3density, ncomponents = 1,kStateGas, fTemperature,fHePressure); 
 	He3GasPure->AddElement(ATHe3, 100.*perCent);
 
 	//Active gas - has 10% hydrogen
 	//density decreases accordingly: 0.9*1 + 0.1 * (2/3) = 0.96 of original density
-	G4Material* He3ActiveGas = new G4Material("He3ActiveGas",he3density*0.96, ncomponents =2, kStateGas, fTemperature,fHePressure); //before change: CLHEP::STP_Temperature
+	G4Material* He3ActiveGas = new G4Material("He3ActiveGas",he3density*0.96, ncomponents =2, kStateGas, fTemperature,fHePressure); 
 	He3ActiveGas->AddElement(ATHe3,90.*perCent);
 	He3ActiveGas->AddElement(ATH,10.*perCent);
 
 	//define He4 in a similar manner
 	G4Element* ATHe4 = new G4Element("ATHe4","ATHe4",ncomponents=1);
 	ATHe4->AddIsotope((G4Isotope*)fNistManager->FindOrBuildElement(2)->GetIsotope(1),100.*perCent);
-	G4double he4density = (fHePressure/20)*0.0033*g/cm3*(4/3); //scale Phil's IG calculation according to pressure from parameter file
+	G4double he4density = (fHePressure/(20*bar))*0.0033*g/cm3*(4/3); //scale Phil's IG calculation according to pressure from parameter file
 	//4He edit: assume same number density as helium-3, but more nucleons means more mass
 
-	G4Material* He4GasPure = new G4Material("He4GasPure",he4density, ncomponents=1,kStateGas, fTemperature,fHePressure); //before change: CLHEP::STP_Temperature
+	G4Material* He4GasPure = new G4Material("He4GasPure",he4density, ncomponents=1,kStateGas, fTemperature,fHePressure);
 	He4GasPure->AddElement(ATHe4, 100.*perCent);
 
 
-	G4Material* He4ActiveGas = new G4Material("He4ActiveGas",he4density*0.96, ncomponents =2, kStateGas, fTemperature,fHePressure); //before change: CLHEP::STP_Temperature
+	G4Material* He4ActiveGas = new G4Material("He4ActiveGas",he4density*0.96, ncomponents =2, kStateGas, fTemperature,fHePressure); 
 	He4ActiveGas->AddElement(ATHe4,90.*perCent);
 	He4ActiveGas->AddElement(ATH,10.*perCent);
 	//decide which version of helium you are using
