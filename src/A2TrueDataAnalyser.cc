@@ -74,7 +74,13 @@ void A2TrueDataAnalyser::VisualizeTree(bool all) const
                 {
                     out << "\t";
                 };
-                out << "(TrackID=" << trackID <<"; Type=" << tracks[trackLookUpMap.at(trackID)].PDGE << "; T=" << tracks[trackLookUpMap.at(trackID)].kinEnergy << ")\n";
+                const TrackData& track = tracks[trackLookUpMap.at(trackID)];
+                out << "(TrackID=" << trackID 
+                << "; Type=" << track.PDGE 
+                << "; T=" << track.kinEnergy 
+                << "; length=" << track.trackLength
+                << "; Nsteps=" << track.steps.size()
+                << ")\n";
             };
             
         for (const auto& track : event.tracks)
@@ -262,6 +268,14 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
     double fZ;
     double kinEnergy;
     double trackLength;
+    double iGlobalTime;
+    double fGlobalTime;
+    std::vector<double> iXSteps;
+    std::vector<double> iYSteps;
+    std::vector<double> iZSteps;
+    std::vector<double> fXSteps;
+    std::vector<double> fYSteps;
+    std::vector<double> fZSteps;
 
     TFile file("tracks.root", "Recreate");
     TTree tree("tree", "energy comparisson");
@@ -276,6 +290,15 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
     tree.Branch("fZ", &fZ);
     tree.Branch("Ekin", &kinEnergy);
     tree.Branch("trackLength", &trackLength);
+    tree.Branch("iGlobalTime", &iGlobalTime);
+    tree.Branch("fGlobalTime", &fGlobalTime);
+    tree.Branch("iXSteps", &iXSteps);
+    tree.Branch("iYSteps", &iYSteps);
+    tree.Branch("iZSteps", &iZSteps);
+    tree.Branch("fXSteps", &fXSteps);
+    tree.Branch("fYSteps", &fYSteps);
+    tree.Branch("fZSteps", &fZSteps);
+
     
     for (auto& event : fRunData.events)
     {   
@@ -286,11 +309,12 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
         auto fillTrackInfo = [ &trackLookUpMap, &childTrackMap, &tracks, 
                                &chosenLayer, &PDGE, &iVolumeName, &fVolumeName,
                                &iX, &iY, &iZ, &fX, &fY, &fZ, &kinEnergy,
-                               &trackLength, &tree, this ]
+                               &trackLength, &iGlobalTime, &fGlobalTime, &iXSteps, &iYSteps, &iZSteps, &fXSteps, &fYSteps, &fZSteps, &tree, this ]
                                             (int trackID, std::size_t depth)
         {
             
             if (chosenLayer==allLayers || depth==chosenLayer)
+            //if ((chosenLayer==allLayers || depth==chosenLayer) && depth != 0) //temporary no primaries
             {   
                 const TrackData& track = tracks[trackLookUpMap.at(trackID)];
                 PDGE = track.PDGE;
@@ -304,7 +328,25 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
                 fZ = track.fZ;
                 kinEnergy = track.kinEnergy;
                 trackLength = track.trackLength;
+                iGlobalTime = track.iGlobalTime;
+                fGlobalTime = track.fGlobalTime;
+                for (auto& step : track.steps)
+                {
+                    iXSteps.push_back(step.iX);
+                    iYSteps.push_back(step.iY);
+                    iZSteps.push_back(step.iZ);
+                    fXSteps.push_back(step.fX);
+                    fYSteps.push_back(step.fY);
+                    fZSteps.push_back(step.fZ);
+                }
                 tree.Fill();
+                
+                iXSteps.clear();
+                iYSteps.clear();
+                iZSteps.clear();
+                fXSteps.clear();
+                fYSteps.clear();
+                fZSteps.clear();
             }
         }; 
 
@@ -322,3 +364,52 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
     tree.Write();
     file.Close();
 }
+
+
+void A2TrueDataAnalyser::StepLengthPlots(std::size_t chosenLayer) const
+{   
+    double stepLength;
+    double preStepKinEnergy;
+    double accumulatedLength;
+    TFile file("steps.root", "Recreate");
+    TTree tree("tree", "stepLength");
+    tree.Branch("stepLength", &stepLength);
+    tree.Branch("preStepKinEnergy", &preStepKinEnergy);
+    tree.Branch("addedLength", &accumulatedLength);
+    const EventData& event = fRunData.events[0]; //only first event 
+    std::unordered_map<int, std::size_t> trackLookUpMap = MakeTrackLookUpMap(event);
+    std::unordered_map<int, std::vector<int>> childTrackMap = MakeChildTrackMap(event);
+    const std::vector<TrackData>& tracks = event.tracks;
+    auto fillStepInfo = [ &trackLookUpMap, &childTrackMap, &tracks, 
+                               &chosenLayer, &stepLength, &preStepKinEnergy, &accumulatedLength, &tree, this ]
+                                            (int trackID, std::size_t depth)
+    {  
+        if (chosenLayer==allLayers || depth==chosenLayer)
+        //if ((chosenLayer==allLayers || depth==chosenLayer) && depth != 0) //temporary no primaries
+        {   
+            const TrackData& track = tracks[trackLookUpMap.at(trackID)];
+            accumulatedLength=0;
+            for (auto& step : track.steps)
+            {
+               stepLength = step.stepLength;
+               accumulatedLength += step.stepLength; 
+               preStepKinEnergy = step.preKinEnergy;
+               tree.Fill();
+            }
+        }
+    };
+    for (const auto& track : event.tracks)
+    {
+        if (track.parentTrackID == 0)
+        {   
+            ParseTrackTree( track.trackID,
+                            childTrackMap,
+                            fillStepInfo,
+                            chosenLayer );  //chosenLayer passed as maxDepth, to stop recursion after reaching the chosen layer
+        }
+    }
+    tree.Write();
+    file.Close();
+}
+
+        

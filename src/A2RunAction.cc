@@ -49,8 +49,9 @@ void A2RunAction::EndOfRunAction(const G4Run* aRun)
   if(fCollectRunData)
   {
     A2TrueDataAnalyser trueDataAnalyser = A2TrueDataAnalyser(std::move(currentRunData));
-    //trueDataAnalyser.VisualizeTree();
+    trueDataAnalyser.VisualizeTree();
     trueDataAnalyser.MakePrimaryTrackInfoHists(0);
+    //trueDataAnalyser.StepLengthPlots(0);
     //trueDataAnalyser.MakeEKinHists(1);
     //trueDataAnalyser.MakeEdepEKinHists(0);
   }

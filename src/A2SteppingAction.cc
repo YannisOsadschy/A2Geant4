@@ -183,14 +183,25 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
     stepData.edep = aStep->GetTotalEnergyDeposit();
     stepData.preKinEnergy = aStep->GetPreStepPoint()->GetKineticEnergy();
     stepData.postKinEnergy = aStep->GetPostStepPoint()->GetKineticEnergy();
+    stepData.stepLength = aStep->GetStepLength();
     //stepData.volumeName = aStep->GetPreStepPoint()->GetPhysicalVolume()->;
+    const G4TouchableHandle& touchableI = aStep->GetPreStepPoint()->GetTouchableHandle();
+    const G4ThreeVector& iPosition = touchableI->GetHistory()->GetTopTransform().TransformPoint(aStep->GetPreStepPoint()->GetPosition());
+    stepData.iX = iPosition.x(); 
+    stepData.iY = iPosition.y(); 
+    stepData.iZ = iPosition.z();
+
+    const G4TouchableHandle& touchableF = aStep->GetPostStepPoint()->GetTouchableHandle();
+    const G4ThreeVector& fPosition = touchableF->GetHistory()->GetTopTransform().TransformPoint(aStep->GetPostStepPoint()->GetPosition());
+    stepData.fX = fPosition.x(); 
+    stepData.fY = fPosition.y(); 
+    stepData.fZ = fPosition.z();
+
     for (const auto& childTrack : *(aStep->GetSecondary()))
     {
         stepData.secondariesTrackID.push_back(childTrack->GetTrackID());
     }
     fTrackingAction->GetCurrentTrackData().steps.push_back(stepData);
-    
-
     if (fSampleElectrons)
     {
         G4Region* region = aStep->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume()->GetRegion();

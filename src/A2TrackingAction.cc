@@ -65,6 +65,8 @@ void A2TrackingAction::PreUserTrackingAction(const G4Track* aTrack)
     currentTrackData.iX = iPosition.x(); 
     currentTrackData.iY = iPosition.y(); 
     currentTrackData.iZ = iPosition.z();
+    currentTrackData.iGlobalTime = aTrack->GetGlobalTime();
+
 }
 
 //______________________________________________________________________________
@@ -101,6 +103,7 @@ void A2TrackingAction::PostUserTrackingAction(const G4Track* aTrack)
     currentTrackData.fX = fPosition.x(); 
     currentTrackData.fY = fPosition.y(); 
     currentTrackData.fZ = fPosition.z();
+    currentTrackData.fGlobalTime = aTrack->GetGlobalTime();
 
     fEventAction->GetCurrentEventData().tracks.push_back(currentTrackData);
     currentTrackData.steps.clear();
