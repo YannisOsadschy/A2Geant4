@@ -116,6 +116,10 @@ protected:
   G4int fTAPSCollID;
   G4bool fStorePrimaries;
 
+  //TPC related stuff currently the Drift Coefficients are attached to each track, 
+  //but they should only be safed one. When I have time I will change the process of storing those parameters to be more direct
+  G4bool fHaveDriftParametersAlreadybeenWritten=false;
+
 public:
   void SetFile(TFile* f){fFile=f;fTree->SetDirectory(fFile);}
   TFile* GetFile(){return fFile;}

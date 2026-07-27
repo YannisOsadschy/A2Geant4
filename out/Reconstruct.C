@@ -1,11 +1,102 @@
 #include <iostream>
+#include <vector>
+#include <stdexcept>
+#include <fstream>
+#include <sstream>
 
+struct SegPostion
+{
+    double rMin;
+    double rMax;
+    double phiMin;
+    double phiMax;
+};
+
+struct AnodeLayout
+{
+	std::vector<double> radii;
+	std::vector<int> nSegments;
+};
 
 //Global definitions
-Double_t vdrift = 354; //cm/ms: 1/10 of what is in A2DriftModel::SetConstants
-Double_t qeslope = -4.5291e-05; //from output of Calibrate.C   //old value: -0.000208
-Double_t qeintercept = -0.127502; //from output of Calibrate.C	//old value: -0.89
+Double_t vdrift; //cm/ms //is now set automatically
+Double_t qeslope = -4.26573e-05; //from output of Calibrate.C   //old value: -0.000208
+Double_t qeintercept = 0.00726747; //from output of Calibrate.C	//old value: -0.89
 
+void GetAnodeLayoutFromDataFile(std::string fileName, std::vector<double>& radii, std::vector<int>& nSegments)
+{
+	std::ifstream inputStream(fileName);
+
+	if (!inputStream)
+	{
+		throw std::runtime_error(fileName+" does not exist");
+	}
+	std::string line;
+	int ierr = 0;
+	while (std::getline(inputStream, line))
+	{
+		if (line.empty() || line[0]=='#')
+		{
+			continue;
+		}
+		int nSegment;
+		double radius;
+		std::istringstream iss(line);
+		std::string key;
+		iss>>key;
+		if (key=="Anode-Radii:")
+		{
+			radii.clear();
+			while(iss>>radius)
+			{
+				radii.push_back(radius);
+			}
+			++ierr;
+		}
+		else if (key=="Anode-Segments:")
+		{
+			nSegments.clear();
+			while(iss>>nSegment)
+			{
+				nSegments.push_back(nSegment);
+			}
+			++ierr;
+		}	
+	}
+	if (ierr!=2)
+	{
+		throw std::runtime_error("format of anode layout data file is incorrect");
+	}
+}
+
+
+SegPostion GetSegPosition(int measuredSegID)
+{
+	std::vector<int> nSegments;
+    std::vector<double> radii;
+	//actual design used in the simulation
+	GetAnodeLayoutFromDataFile("data/TPC.dat",radii,nSegments);
+    int segID=0;
+    for (std::size_t i=0; i<radii.size()-1; ++i)
+    {
+        SegPostion segPostion;
+        segPostion.rMin = radii[i];
+        segPostion.rMax = radii[i+1];
+        for (std::size_t j=0; j<nSegments[i]; ++j)
+        {
+            segPostion.phiMin = 360/nSegments[i]*j;
+            segPostion.phiMax = 360/nSegments[i]*(j+1);
+            ++segID;
+            std::cout<<segID<<std::endl;
+            if (measuredSegID==segID)
+            {
+                return segPostion;
+            }
+        }
+    }
+    throw std::runtime_error("measuredSegID does not exist in Cathode design");
+}
+/*
 //Attach an anode section ID number to an x coordinate for theta reconstruction
 Double_t GetX(Int_t secID){
 	//based on anode numbering scheme in g4
@@ -23,13 +114,17 @@ Double_t GetX(Int_t secID){
         if (secID==65)return 5; //central ring
         return 0; //central pad
 }
+*/
 
 //Reconstruct recoil polar angle
 Double_t GetTheta(Double_t mintime, Double_t maxtime, Double_t minx, Double_t maxx){
 	Double_t deltax, deltat, theta;
 	theta=0;
-	deltax=maxx-minx;
-	deltat=maxtime-mintime;
+    cout<<minx<<" "<<maxx<<endl;
+	deltax=abs(maxx-minx);
+	deltat=abs(maxtime-mintime);
+    //deltax=maxx-minx;
+	//deltat=maxtime-mintime;
 	if(deltax!=0 && deltat!=0)theta=90-atan((deltat*vdrift*10)/deltax)*(180/3.14);
 	return theta;
 }
@@ -106,6 +201,8 @@ void Reconstruct(TString filename){
 	//read in data file and tree
 	TFile *in = new TFile(filename);
 	TTree *h12 = (TTree*)in->Get("h12");
+	//Get vdrift set in the simulation
+    vdrift=((TParameter<double>*)in->Get("TPCvDrift"))->GetVal()/10;
 	//define variables for input tree information
 	Int_t ntpc;							//true: number of electrons per event
 	Int_t *itpc = new Int_t[100];     	//measured: id of pad		
@@ -158,9 +255,9 @@ void Reconstruct(TString filename){
 		//index ntpc-1 = first saved by simulation = first to occur
 		//so point 1 = "min" = tpc[ntpc-1], point 2 = "max" = tpc[0]
 		maxtime=ttpc[0];
-		maxx=GetX(itpc[0]);
+		maxx=GetSegPosition(itpc[0]).rMin;
 		mintime=ttpc[ntpc-1];
-		minx=GetX(itpc[ntpc-1]);
+		minx=GetSegPosition(itpc[ntpc-1]).rMin;
 		//try not to use central pad for min if hits in both ring and one other section
 			
 		if (minx==0 && maxx !=5){
@@ -178,7 +275,6 @@ void Reconstruct(TString filename){
 		energy_rec=GetEnergy(charge);
 		theta_rec=GetTheta(mintime,maxtime,minx,maxx);	
 		//get true variables
-		std::cout << klab[2] << std::endl;		
 		theta_true=acos(dircos[0][2])*180/3.14;  //changed 1 to 0, since the hadron is the first particle created in phase space mode
 		z_true=vertex[2];
 		energy_true=klab[0];			//changed 1 to 0, since the hadron is the first particle created in phase space mode

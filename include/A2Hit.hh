@@ -10,12 +10,18 @@
 #include "G4ThreeVector.hh"
 #include "G4LogicalVolume.hh"
 
-
+struct DriftParametersTPC2 //same struct exists in A2UserTrackInfo, which makes the compiler compalin thus the 2
+{
+    G4double selectedPressure;
+    G4double selectedEfield;
+    G4double vDrift;
+    G4double longitudinalDiffusionCoefficient;
+    G4double transversalDiffusionCoefficient;
+};
 
 class A2Hit : public G4VHit
 {
 public:
-
   A2Hit();
   A2Hit(G4LogicalVolume* logVol); //new constructor
   ~A2Hit();
@@ -58,6 +64,28 @@ public:
   G4double GetTime() { return fTime; };
   G4int GetNParticles();
   G4int GetParticle();
+
+  //drift coefficients for TPC
+
+private:
+  G4bool fHasDriftParametersTPC=false;
+  DriftParametersTPC2 fDriftParametersTPC;
+  public:
+  void SetHasDriftParametersTPC(bool hasDriftParametersTPC){fHasDriftParametersTPC=hasDriftParametersTPC;}
+  G4bool GetHasDriftParametersTPC(){return fHasDriftParametersTPC;}
+  void SetDriftParametersTPC(double selectedPressure,
+                          double selectedEfield,
+                          double vDrift,
+                          double longitudinalDiffusionCoefficient,
+                          double transversalDiffusionCoefficient)
+  {
+      fDriftParametersTPC.selectedPressure=selectedPressure;
+      fDriftParametersTPC.selectedEfield=selectedEfield;
+      fDriftParametersTPC.vDrift=vDrift;
+      fDriftParametersTPC.longitudinalDiffusionCoefficient=longitudinalDiffusionCoefficient;
+      fDriftParametersTPC.transversalDiffusionCoefficient=transversalDiffusionCoefficient;
+  }
+  DriftParametersTPC2 GetDriftParametersTPC(){return fDriftParametersTPC;}
 };
 
 

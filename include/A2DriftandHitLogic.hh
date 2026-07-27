@@ -42,9 +42,12 @@ class A2DriftandHitLogic
 
     	void SetConstants(G4Region*);
         void InterpolateDriftConstants(std::vector<Point>&, std::array<double,3>&, double);
-        G4double drift_vel; //drift velocity
-    	G4double long_diff; //longitudinal diffusion
-    	G4double trans_diff; //transverse diffusion
+        G4double fPressure;
+        G4double fEfield;
+        G4double fTemperature;       
+        G4double fDriftVel; //drift velocity
+    	G4double fLongDiff; //longitudinal diffusion
+    	G4double fTransDiff; //transverse diffusion
     	//G4double fHePressure; //from TPC file -  to pick correct data
     	//G4int fHeIsotope;
 

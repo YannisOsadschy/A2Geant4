@@ -8,7 +8,10 @@
 
 #include "A2TrueDataAnalyser.hh"
 #include "TimeDebugger.hh"
+#include "G4ProductionCutsTable.hh"
+#include "CLHEP/Units/SystemOfUnits.h" //units
 
+using namespace CLHEP; //units
 
 
 A2RunAction::A2RunAction()
@@ -54,6 +57,34 @@ void A2RunAction::EndOfRunAction(const G4Run* aRun)
     //trueDataAnalyser.StepLengthPlots(0);
     //trueDataAnalyser.MakeEKinHists(1);
     //trueDataAnalyser.MakeEdepEKinHists(0);
+
+
+    //debugging productioncut length to energy conversion
+    //quick and dirty chatgpt code:
+    /*
+    auto* pct = G4ProductionCutsTable::GetProductionCutsTable();
+
+    auto* ranges =
+        pct->GetRangeCutsVector(G4ProductionCuts::GetIndex("e-"));
+
+    auto* energies =
+        pct->GetEnergyCutsVector(G4ProductionCuts::GetIndex("e-"));
+
+    for (size_t i = 0; i < pct->GetTableSize(); ++i)
+    {
+        auto* couple = pct->GetMaterialCutsCouple(i);
+
+        G4cout
+            << i
+            << ";material = " << couple->GetMaterial()->GetName()
+            << ";range = " << (*ranges)[i]/mm
+            << "mm"
+            << ";energy = " << (*energies)[i]/keV
+            << "keV"
+            << G4endl;
+    }
+    */
+
   }
 
   

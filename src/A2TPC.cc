@@ -24,6 +24,7 @@
 #include "G4FastSimulationManager.hh"
 #include "G4ProductionCuts.hh"
 #include "G4ProductionCutsTable.hh"
+#include "G4UserLimits.hh"
 
 #include "G4FieldManager.hh" //manage the fields
 #include "G4TransportationManager.hh" //transport through fields
@@ -31,6 +32,9 @@
 #include "G4IntegrationDriver.hh"
 
 #include "A2UserRegionInformation.hh"
+#include <vector>
+#include <string>
+#include <sstream>
 
 using namespace CLHEP; //units
 
@@ -54,10 +58,18 @@ A2TPC::A2TPC(){
 	fVesselHeLogic = NULL; //helium inside vessel (union solid)
 	//volumes in MakeAnodeCathode()
 	fAnodeLogic = NULL; //contains all anode parts
-        fAnodeCentreLogic= NULL; //centre of anode
-        fAnodeRingLogic= NULL; //ring around anode centre
+
+
+    //fAnodeCentreLogic= NULL; //centre of anode
+    //fAnodeRingLogic= NULL; //ring around anode centre
+
+
 	fCathodeLogic= NULL; //cathode (one piece)
-	for(G4int i=0;i<6;i++)fAnodeSecLogic[i]=NULL; //array of anode segments
+
+
+	//for(G4int i=0;i<6;i++)fAnodeRingSectorsLogic[i]=NULL; //array of anode segments
+
+
 	//volumes in MakeGrid()
 	fGridLogic= NULL; //contains entire grid
 	for(G4int j=0;j<200;j++)fWireLogic[j]=NULL; //array of grid wires
@@ -322,110 +334,56 @@ void A2TPC::MakeVessel(){
 void A2TPC::MakeAnodeCathode(){
         /***** solids for anode geometry *****/
         //main volume to hold sub-pieces
-	G4Tubs *fAnode = new G4Tubs("Anode", //name
+	
+    G4Tubs *fAnode = new G4Tubs("Anode", //name
                                         0, //inner radius
                                         fRadius, //outer radius
                                         (fGThickness)/2, //half length
                                         0.*deg, //start angle
                                         360.*deg); //spanning angle
-	
-	//circular central piece (G-10)
-        G4Tubs *fAnodeCentre = new G4Tubs("AnodeCentre",
-                                        0,
-                                        fRadPad*mm,
-                                        fGThickness/2,
-                                        0.*deg,
-                                        360.*deg);
-	//ring around central piece (G-10)
-        G4Tubs *fAnodeRing = new G4Tubs("AnodeRing", 
-					fRadPad*mm,
-                                        fRadRing*mm,
-					fGThickness/2,
-                                        0.*deg,
-                                        360.*deg);
-	
-	/***** logical volumes *****/	
-	//volume holding entire anode (helium)
-	fAnodeLogic = new G4LogicalVolume
+    fAnodeLogic = new G4LogicalVolume
                         (fAnode,
                          fNistManager->FindOrBuildMaterial(fHeMaterial),
                          "AnodeLogic");
-	
-	//circular central piece (G-10)
-        fAnodeCentreLogic = new G4LogicalVolume
-                        (fAnodeCentre,
-                        fNistManager->FindOrBuildMaterial("G-10"),
-                        "AnodeCentreLogic");
-	//ring around central piece (G-10)
-        fAnodeRingLogic = new G4LogicalVolume
-                        (fAnodeRing,
-                        fNistManager->FindOrBuildMaterial("G-10"),
-                        "AnodeRingLogic");
-	
-	/***** visualization attributes *****/
-        G4VisAttributes* lblue  = new G4VisAttributes( G4Colour(0.0,0.0,0.75) );
-        G4VisAttributes* grey   = new G4VisAttributes( G4Colour(0.5,0.5,0.5)  );
-        fAnodeLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
-        fAnodeCentreLogic->SetVisAttributes(lblue);
-        fAnodeRingLogic->SetVisAttributes(lblue);
 
-        /***** place anode parts to fAnodeLogic *****/
-        //circular central piece (G-10)
-	new G4PVPlacement(0, //rotation
-                        G4ThreeVector(0,0,0), //placement
-                        fAnodeCentreLogic, //logical volume
-                        "AnodeCentrePlacement", //name
-                        fAnodeLogic, //mother volume
-                        false, //pmany: always false
-                        //1);
-			2+4*(fAngularSecs),fIsOverlapVol); //unique copy number
-        //ring around central piece (G-10)
-	new G4PVPlacement(0, //rotation
-                        G4ThreeVector(0,0,0), //placement
-                        fAnodeRingLogic, //logical volume
-                        "AnodeRingPlacement", //name
-                        fAnodeLogic, //mother volume
-                        false, //pmany: always false
-                        //2);
-			1+4*(fAngularSecs),fIsOverlapVol); //unique copy number
-	
-	/*** segments of anode: reads specifications from parameter file ****/
-	/***** define solid and logical volume for each radial section *****/
-	//new design: add some 
-	G4double radii[5]={fRadRing,fRad1,fRad2,fRad3,fRad4};
-	for(G4int k=0; k<4; k++){
-		//section of each row (G-10)
-		fAnodeSec[k] = new G4Tubs("AnodeSec",
-                                        radii[k],
-					radii[k+1],
-					fGThickness/2,
-                                        0.*deg,
-					360.*deg/fAngularSecs);
-        	fAnodeSecLogic[k] = new G4LogicalVolume
-                        (fAnodeSec[k],
-                        fNistManager->FindOrBuildMaterial("G-10"),
-                        "AnodeSecLogic");
-		fAnodeSecLogic[k]->SetVisAttributes(lblue);
+    G4VisAttributes* lblue  = new G4VisAttributes( G4Colour(0.0,0.0,0.75) );
+    G4VisAttributes* grey   = new G4VisAttributes( G4Colour(0.5,0.5,0.5)  );
+    fAnodeLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
+    
 
-		/***** place ring segments to anode *****/
-        	for(G4int h=0; h<fAngularSecs;h++){ //for however many angular sections were defined in paramter file
-          		//define the angle
-                	G4double theta = h*360.*deg/fAngularSecs;
-                	//generate a rotation matrix
-                	G4RotationMatrix* rot = new G4RotationMatrix(theta,0,0);
-                	//place one section of each ring at this angle
-			//section of first row (G-10)
-                	new G4PVPlacement(rot, //rotation
-                        G4ThreeVector(0,0,0),
-                        fAnodeSecLogic[k], //logical volume
-                        "AnodeSecPlacement", //name
-                        fAnodeLogic, //mother volume
-                        false, //pmany: always false
-                        1+h*4+k,fIsOverlapVol);
-			//1+h+k*fAngularSecs,fIsOverlapVol); //unique copy number
-		}
-	}
-        
+    std::vector<int> fAnodeSegmentsN = {1,7,14,14,14,14};
+    std::vector<double> fAnodeSegmentsRadii ={0.,3.,6.,10.,15.,25.,50.};
+
+    int anodeSegmentID=0;
+    for (std::size_t i=0;i<fAnodeSegmentsRadii.size()-1;++i)
+    {
+        G4Tubs* anodeRingSector = new G4Tubs("AnodeSec",
+                                fAnodeSegmentsRadii[i],
+								fAnodeSegmentsRadii[i+1],
+								fGThickness/2,
+                                0.*deg,
+								360.*deg/fAnodeSegmentsN[i]);
+        G4LogicalVolume* anodeRingSectorLogic = new G4LogicalVolume(anodeRingSector,
+                                                fNistManager->FindOrBuildMaterial("G-10"),
+                                                "AnodeSecLogic");
+        anodeRingSectorLogic->SetVisAttributes(lblue);
+        G4cout << "Ring:[" << fAnodeSegmentsRadii[i] << "," << fAnodeSegmentsRadii[i+1] <<"]" <<G4endl;
+        for (std::size_t j=0; j<fAnodeSegmentsN[i]; ++j)
+        {
+            ++anodeSegmentID;
+            G4cout << anodeSegmentID << G4endl;
+            G4double theta = j*360.*deg/fAnodeSegmentsN[i];
+            G4RotationMatrix* rot = new G4RotationMatrix(theta,0,0);
+            new G4PVPlacement(rot, //rotation
+                            G4ThreeVector(0,0,0),
+                            anodeRingSectorLogic, //logical volume
+                            "AnodeSecPlacement", //name
+                            fAnodeLogic, //mother volume
+                            false, //pmany: always false
+                            anodeSegmentID,fIsOverlapVol);
+        }
+        fAnodeRingSectorsLogic.push_back(anodeRingSectorLogic); //for later use as sensitive detector
+    }
 	/***** build solids for cathode geometry *****/
         //aluminum cathode
 	G4Tubs *fCathode = new G4Tubs("Cathode",
@@ -444,6 +402,135 @@ void A2TPC::MakeAnodeCathode(){
 	/***** visulization attributes *****/
 	fCathodeLogic->SetVisAttributes(lblue);
 }
+
+
+/*
+G4Tubs *fAnode = new G4Tubs("Anode", //name
+                                    0, //inner radius
+                                    fRadius, //outer radius
+                                    (fGThickness)/2, //half length
+                                    0.*deg, //start angle
+                                    360.*deg); //spanning angle
+
+//circular central piece (G-10)
+G4Tubs *fAnodeCentre = new G4Tubs("AnodeCentre",
+                                0,
+                                fRadPad*mm,
+                                fGThickness/2,
+                                0.*deg,
+                                360.*deg);
+//ring around central piece (G-10)
+    G4Tubs *fAnodeRing = new G4Tubs("AnodeRing", 
+                                    fRadPad*mm,
+                                    fRadRing*mm,
+                                    fGThickness/2,
+                                    0.*deg,
+                                    360.*deg);
+
+//logical volumes	
+//volume holding entire anode (helium)
+fAnodeLogic = new G4LogicalVolume
+                    (fAnode,
+                        fNistManager->FindOrBuildMaterial(fHeMaterial),
+                        "AnodeLogic");
+
+//circular central piece (G-10)
+    fAnodeCentreLogic = new G4LogicalVolume
+                    (fAnodeCentre,
+                    fNistManager->FindOrBuildMaterial("G-10"),
+                    "AnodeCentreLogic");
+//ring around central piece (G-10)
+    fAnodeRingLogic = new G4LogicalVolume
+                    (fAnodeRing,
+                    fNistManager->FindOrBuildMaterial("G-10"),
+                    "AnodeRingLogic");
+
+//visualization attributes
+    G4VisAttributes* lblue  = new G4VisAttributes( G4Colour(0.0,0.0,0.75) );
+    G4VisAttributes* grey   = new G4VisAttributes( G4Colour(0.5,0.5,0.5)  );
+    fAnodeLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
+    fAnodeCentreLogic->SetVisAttributes(lblue);
+    fAnodeRingLogic->SetVisAttributes(lblue);
+
+//place anode parts to fAnodeLogic
+    //circular central piece (G-10)
+                        
+new G4PVPlacement(0, //rotation
+                    G4ThreeVector(0,0,0), //placement
+                    fAnodeCentreLogic, //logical volume
+                    "AnodeCentrePlacement", //name
+                    fAnodeLogic, //mother volume
+                    false, //pmany: always false
+                    //1);
+        2+4*(fAngularSecs),fIsOverlapVol); //unique copy number
+    //ring around central piece (G-10)
+new G4PVPlacement(0, //rotation
+                    G4ThreeVector(0,0,0), //placement
+                    fAnodeRingLogic, //logical volume
+                    "AnodeRingPlacement", //name
+                    fAnodeLogic, //mother volume
+                    false, //pmany: always false
+                    //2);
+        1+4*(fAngularSecs),fIsOverlapVol); //unique copy number
+
+//segments of anode: reads specifications from parameter file //
+// define solid and logical volume for each radial section
+//new design: add some 
+G4double fAnodeSegmentsRadii[5]={fRadRing,fRad1,fRad2,fRad3,fRad4};
+for(G4int k=0; k<4; k++){
+    //section of each row (G-10)
+    fAnodeSec[k] = new G4Tubs("AnodeSec",
+                            fAnodeSegmentsRadii[k],
+                            fAnodeSegmentsRadii[k+1],
+                            fGThickness/2,
+                            0.*deg,
+                            360.*deg/fAngularSecs);
+    fAnodeRingSectorsLogic[k] = new G4LogicalVolume
+                    (fAnodeSec[k],
+                    fNistManager->FindOrBuildMaterial("G-10"),
+                    "AnodeSecLogic");
+                    fAnodeRingSectorsLogic[k]->SetVisAttributes(lblue);
+
+//place ring segments to anode
+        G4cout << "ring: " << k << G4endl;
+        for(G4int h=0; h<fAngularSecs;h++){ //for however many angular sections were defined in paramter file
+            //define the angle
+                G4double theta = h*360.*deg/fAngularSecs;
+                //generate a rotation matrix
+                G4RotationMatrix* rot = new G4RotationMatrix(theta,0,0);
+                //place one section of each ring at this angle
+        //section of first row (G-10)
+                new G4PVPlacement(rot, //rotation
+                    G4ThreeVector(0,0,0),
+                    fAnodeRingSectorsLogic[k], //logical volume
+                    "AnodeSecPlacement", //name
+                    fAnodeLogic, //mother volume
+                    false, //pmany: always false
+                    1+h*4+k,fIsOverlapVol);
+                    G4cout << "\tid: " << 1+h*4+k << G4endl; 
+        //1+h+k*fAngularSecs,fIsOverlapVol); //unique copy number
+    }
+}
+
+//build solids for cathode geometry
+//aluminum cathode
+G4Tubs *fCathode = new G4Tubs("Cathode",
+                                0,
+                                fCathodeRadius,
+                                fAlThickness/2,
+                                0.*deg,
+                                360.*deg);
+
+//cathode logical volumes
+//aluminum cathode
+fCathodeLogic = new G4LogicalVolume(fCathode,
+                fNistManager->FindOrBuildMaterial("Aluminum"),
+                "CathodeLogic");
+
+//visulization attributes
+fCathodeLogic->SetVisAttributes(lblue);
+}
+/*
 
 /**** This function builds the wire grid *****/
 void A2TPC::MakeGrid(){
@@ -535,19 +622,24 @@ void A2TPC::MakeSensitiveDetector(){
 	/***** define and register sensitive detector *****/
         if(!fAnodeSD){ //if SD not already defined
         G4SDManager* SDman = G4SDManager::GetSDMpointer(); //get pointer to SD manager
-        fAnodeSD = new A2SD("AnodeSD",2+4*fAngularSecs); //create a new SD
+		G4int totalNumberOfAnodeSegments = 0;
+		for (std::size_t i=0; i<fAnodeSegmentsN.size(); ++i)
+		{
+			totalNumberOfAnodeSegments += fAnodeSegmentsN[i];
+		}
+        fAnodeSD = new A2SD("AnodeSD",totalNumberOfAnodeSegments); //create a new SD
         SDman->AddNewDetector(fAnodeSD); //add this detector to the SD manager
 
         /***** set each piece of anode as part of the sensitive detector *****/
 	
-	for(G4int n=0; n<4; n++){ //for each anode section
-		fAnodeSecLogic[n]->SetSensitiveDetector(fAnodeSD); //make sensitive
-		fRegionAnode->AddRootLogicalVolume(fAnodeSecLogic[n]); //add to region
+	for(G4int n=0; n<fAnodeRingSectorsLogic.size(); n++){ //for each anode section
+		fAnodeRingSectorsLogic[n]->SetSensitiveDetector(fAnodeSD); //make sensitive
+		fRegionAnode->AddRootLogicalVolume(fAnodeRingSectorsLogic[n]); //add to region
 	}
-	fAnodeCentreLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
-        fAnodeRingLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
-        fRegionAnode->AddRootLogicalVolume(fAnodeCentreLogic); //add to region
-	fRegionAnode->AddRootLogicalVolume(fAnodeRingLogic); //add to region
+	//fAnodeCentreLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
+        //fAnodeRingLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
+        //fRegionAnode->AddRootLogicalVolume(fAnodeCentreLogic); //add to region
+	//fRegionAnode->AddRootLogicalVolume(fAnodeRingLogic); //add to region
     }
 }
 
@@ -571,10 +663,16 @@ void A2TPC::MakeField(){
 	/***** set specific production cuts for active gas region *****/
 	G4ProductionCuts* TPCcuts = new G4ProductionCuts(); //create custom cut
 	G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(7*eV,1*GeV); //optimized at 7 eV lower limit
-	//this gives the most linear charge-energy relationship
-    TPCcuts->SetProductionCut(0*mm); //added a cut
+
+    //no delta electrons shall be produced, 
+    //sampling of electron ion pairs is manually done in A2DriftandHitLogic with W-value 
+    ////he3: 10mm<->54.0keV, he4:10mm<->47.4keV
+    TPCcuts->SetProductionCut(10*mm, G4ProductionCuts::GetIndex("e-")); 
 	fRegionActiveGas->SetProductionCuts(TPCcuts); //assign this cut to this region
-	
+    G4UserLimits* tpcLimits = new G4UserLimits();
+    tpcLimits->SetMaxAllowedStep(0.01*mm); //to get a better resolution of the energy loss along the track
+    fRegionActiveGas->SetUserLimits(tpcLimits);
+
 	/***** attach model of electron drift to active gas region *****/
 	A2DriftModel *driftPhys = new A2DriftModel("Electron Drift Model",fRegionActiveGas); //create model
 	G4FastSimulationManager* driftMan = new G4FastSimulationManager(fRegionActiveGas); //call fast simulation manager
@@ -644,8 +742,8 @@ void A2TPC::PlaceParts(){
 /***** this function reads target dimensions from a data file *****/
 void A2TPC::ReadParameters(const char* file){
 	//define keys contained in file
-        char* keylist[] = { (char*) "TPC-Dim:", (char*) "Anode-Dim:", (char*) "Cathode-Dim:", (char*) "Grid-Dim:", (char*) "Helium:", (char*) "Run-Mode:", NULL};
-        enum { ETPC_dim, EAnode_dim, ECathode_dim, EGrid_dim, EHelium, ERun_Mode, ENULL };
+        char* keylist[] = { (char*) "TPC-Dim:", (char*) "Anode-Radii:", (char*) "Anode-Segments:", (char*) "Anode-Dim:", (char*) "Cathode-Dim:", (char*) "Grid-Dim:", (char*) "Run-Mode:", NULL};
+        enum { ETPC_dim, EAnode_radii, EAnode_segments, EAnode_dim, ECathode_dim, EGrid_dim, ERun_Mode, ENULL };
         //define variables needed for reading the file
         G4int ikey, iread;
         G4int ierr = 0;
@@ -676,10 +774,36 @@ void A2TPC::ReadParameters(const char* file){
                            &fExtension,&fExtRadius,&fEndThickness,&fBeThickness);
             if( iread != 8) ierr++;
             break;
+		case EAnode_radii://fAnodeSegmentsRadii of the segements
+		{
+			std::istringstream iss(line);
+			G4double radius;
+			std::string key;
+			iss>>key;
+			fAnodeSegmentsRadii.clear();
+			while(iss>>radius)
+			{
+				fAnodeSegmentsRadii.push_back(radius);
+			}
+			break;
+		}
+		case EAnode_segments://number of segements of a ring
+		{	
+			std::istringstream iss(line);
+			G4int nSegment;
+			std::string key;
+			iss>>key;
+			fAnodeSegmentsN.clear();
+			while(iss>>nSegment)
+			{
+				fAnodeSegmentsN.push_back(nSegment);
+			}
+			break;
+		}
         case EAnode_dim: //dimensions of anode
-            iread = sscanf(line,"%*s%lf%lf%i%lf%lf%lf%lf%lf%lf",
-                            &fGThickness,&fAnodeDistance,&fAngularSecs,&fRadPad,&fRadRing,&fRad1,&fRad2,&fRad3,&fRad4);
-            if (iread !=9) ierr++;
+            iread = sscanf(line,"%*s%lf%lf",
+                            &fGThickness,&fAnodeDistance);
+            if (iread !=2) ierr++;
             break;
         case EGrid_dim: //dimensions of anode
             iread = sscanf(line,"%*s%lf%lf",
@@ -691,13 +815,6 @@ void A2TPC::ReadParameters(const char* file){
                             &fAlThickness,&fCathodeRadius,&fCathodeDistance);
             if (iread !=3) ierr++;
             break;
-        /* active target gas is now set in the detectormessenger not the data file
-    	case EHelium:
-    	    iread = sscanf(line,"%*s%i%lf",
-    			    &fHeIsotope,&fHePressure);
-    	    if (iread !=2) ierr++;
-	        break;
-        */
         case ERun_Mode: //run mode
             iread = sscanf(line,"%*s%d",
                            &fIsOverlapVol);

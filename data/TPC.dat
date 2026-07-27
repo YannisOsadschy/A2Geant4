@@ -12,15 +12,16 @@
 ## Be window thickness: 6
 TPC-Dim: 281.0 92.0 8 25.0 200.0 25.0 17.0 6.0
 ##
+## Radii of the Anode segments in mm
+Anode-Radii: 0.0 3.0 6.0 10.0 15.0 25.0 50.0
+##
+## Number of Anode Segments for a given ring 
+Anode-Segments: 1 7 14 14 14 14
+##
 ## Anode specifications in mm
 ## Thickness : 1.5
 ## Distance of anode from cell end : 25
-## Angular sections : 16
-## Radius of anode central pad
-## Radius of anode ring
-## Radius of first, second, and third rows
-## Radius of fourth row = outer radius of anode
-Anode-Dim: 1.5 25 16 5 7 10 13 25 50
+Anode-Dim: 1.5 25
 ##
 ## Cathode specifications in mm
 ## Thickness : 1.0

@@ -4,6 +4,8 @@
 #include "CLHEP/Units/SystemOfUnits.h"
 #include "A2UserTrackInformation.hh"
 
+#include "TParameter.h"
+
 using namespace CLHEP;
 
 A2CBOutput::A2CBOutput(){
@@ -274,6 +276,19 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
         //ftpcy[ii]=hit->GetPos().y()/cm;
         //ftpcz[ii]=hit->GetPos().z()/cm;
     fitpc[ii]=hit->GetID();
+    if (hit->GetHasDriftParametersTPC() && !fHaveDriftParametersAlreadybeenWritten)
+    {   
+        fHaveDriftParametersAlreadybeenWritten=true;
+        DriftParametersTPC2 driftParameters = hit->GetDriftParametersTPC();
+        fFile->WriteObject(new TParameter<Double_t>("TPCselectedPressure", driftParameters.selectedPressure),"TPCselectedPressure");
+        fFile->WriteObject(new TParameter<Double_t>("TPCselectedEfield", driftParameters.selectedEfield),"TPCselectedEfield");
+        fFile->WriteObject(new TParameter<Double_t>("TPCvDrift", driftParameters.vDrift),"TPCvDrift");
+        fFile->WriteObject(new TParameter<Double_t>("TPClongDiff", driftParameters.longitudinalDiffusionCoefficient),"TPClongDiff");
+        fFile->WriteObject(new TParameter<Double_t>("TPCtransDiff", driftParameters.transversalDiffusionCoefficient),"TPCtransDiff");
+        G4cout<<driftParameters.selectedPressure<<G4endl;
+        G4cout<<driftParameters.selectedEfield<<G4endl;
+        G4cout<<driftParameters.vDrift<<G4endl;
+    }
       }
     }
   }
