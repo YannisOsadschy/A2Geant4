@@ -19,6 +19,11 @@ struct StepData
     double edep;
     double preKinEnergy;
     double postKinEnergy;
+    double stepLength;
+    std::string iVolumeName;    //intital volume
+    std::string fVolumeName;    //final volume
+    double iX, iY, iZ;          //initial local position
+    double fX, fY, fZ;          //final local position
     ///////////////////////////////////////////////////////////////
     std::vector<int> secondariesTrackID; //do not remove
 };
@@ -35,6 +40,8 @@ struct TrackData
     std::string fVolumeName;    //final volume
     double iX, iY, iZ;          //initial local position
     double fX, fY, fZ;          //final local position
+    double iGlobalTime;
+    double fGlobalTime;
     //////////////////////////////////////////////////////////////
     std::vector<StepData> steps; //do not remove
 };
