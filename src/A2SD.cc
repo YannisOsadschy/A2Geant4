@@ -134,6 +134,22 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     avgTime[id]=time; //average of one entry is itself: use averaging function later
     //auto tB = std::chrono::high_resolution_clock::now();
     //TimeDebugger::A2SDIfTrue += std::chrono::duration<double>(tB-tA).count();
+
+    //TPC driftParameters are currently passed as the following: A2DriftandHitLogic->A2UserTrackInformation->A2Hit->A2CBOutput for every track. 
+    //To save memory it would better to move the determination of the Drift parameters from A2DriftandHitLogic to the A2TPC 
+    //and pass the parameters to A2CBOutput via the A2DetectorConstruction
+    if (track_info->GetHasDriftParametersTPC())
+    {
+        myHit->SetHasDriftParametersTPC(true);
+        DriftParametersTPC driftParameters = track_info->GetDriftParametersTPC();
+        myHit->SetDriftParametersTPC(driftParameters.selectedPressure,
+                                driftParameters.selectedEfield,
+                                driftParameters.vDrift,
+                                driftParameters.longitudinalDiffusionCoefficient,
+                                driftParameters.transversalDiffusionCoefficient);
+    }
+
+
   }
   else // This is not new
   {
@@ -176,7 +192,11 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
       //TimeDebugger::line2 += std::chrono::duration<double>(ty-tx).count();
       //(*fCollection)[fhitID[id]]->SetTime(avgTime[id]);
       //if (id==66 && time > (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
+      //G4cout << "collectedTime= " << (*fCollection)[fhitID[id]]->GetTime() <<G4endl;
       if ( time < (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
+      
+      //G4cout << "time= " << time <<G4endl;
+      
 	 //if (id == 1 && time < (*fCollection)[fhitID[id]]->GetTime())
 	   //   (*fCollection)[fhitID[id]]->SetTime(time); //set minimum possible time
      //else if (time > (*fCollection)[fhitID[id]]->GetTime())
