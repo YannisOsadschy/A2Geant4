@@ -243,7 +243,6 @@ void A2SD::EndOfEvent(G4HCofThisEvent* HCE)
     }
   fNhits=0;
   //G4cout<<"EndOfEvent( done"<<G4endl;
-  fTPCHitOrder.clear();
   
 
 }
