@@ -32,7 +32,6 @@ A2SD::A2SD(G4String name,G4int Nelements):G4VSensitiveDetector(name)
   for(G4int i=0;i<fNelements;i++)fhitID[i]=-1;
   fHits=new G4int[fNelements];
   for(G4int i=0;i<fNelements;i++)fHits[i]=0;
-  hitTimes=new std::vector<double>[fNelements]; //create vector for each section of anode
   avgTime=new G4double[fNelements];
   for(G4int i=0;i<fNelements;i++)avgTime[i]=0;
   //do I need to initialize vector?? set to zero?
@@ -130,8 +129,8 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     fHits[fNhits++]=id;
     //some TPC stuff: initialize the vector and average
     G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
-    hitTimes[id].push_back(time); //add first time
-    avgTime[id]=time; //average of one entry is itself: use averaging function later
+    myHit->ClearHitTimesTPC();
+    myHit->AppendHitTimeTPC(time/ms);
     //auto tB = std::chrono::high_resolution_clock::now();
     //TimeDebugger::A2SDIfTrue += std::chrono::duration<double>(tB-tA).count();
 
@@ -153,10 +152,11 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
   }
   else // This is not new
   {
-    (*fCollection)[fhitID[id]]->AddEnergy(edep);
-    (*fCollection)[fhitID[id]]->AddCharge(qdep);
-    (*fCollection)[fhitID[id]]->AddPartEnergy(track_info->GetPartID(), edep);
-    (*fCollection)[fhitID[id]]->AddPartCharge(track_info->GetPartID(), qdep);
+    A2Hit* myHit = (*fCollection)[fhitID[id]];
+    myHit->AddEnergy(edep);
+    myHit->AddCharge(qdep);
+    myHit->AddPartEnergy(track_info->GetPartID(), edep);
+    myHit->AddPartCharge(track_info->GetPartID(), qdep);
     //G4cout<<"Adding to existing hit"<<G4endl;
     // set more realistic hit times
     G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
@@ -167,34 +167,43 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     //do something here to fix time for Anode hits???
     if (volume->GetName().contains("TAPS"))
     {
-      if (edep/MeV > 4. && time < (*fCollection)[fhitID[id]]->GetTime())
-        (*fCollection)[fhitID[id]]->SetTime(time);
+      if (edep/MeV > 4. && time < myHit->GetTime())
+        myHit->SetTime(time);
     }
     else if (volume->GetName().contains("CRYSTAL"))
     {
-      if (edep/MeV > 2. && time < (*fCollection)[fhitID[id]]->GetTime())
-        (*fCollection)[fhitID[id]]->SetTime(time);
+      if (edep/MeV > 2. && time < myHit->GetTime())
+        myHit->SetTime(time);
     }
     //TPC stuff: take average time to actually do some Time Projecting
     else if (volume->GetName().contains("Anode")) //play with anode times
     {
-      hitTimes[id].push_back(time);
+        myHit->AppendHitTimeTPC(time/ms);
+        /*
+        G4int hitThreshold = 10;
+        if (.size() == hitThreshold)
+        {
+            fTPCHitOrder.push_back(id);
+            myHit->SetSequenceIndexTPC(fTPCHitOrder.size()-1);
+            G4cout << id << "   " << .size() << "   " << myHit->GetSequenceIndexTPC() << G4endl;
+        }
+        */
+
+
       //auto tx = std::chrono::high_resolution_clock::now();
       //TimeDebugger::line1 += std::chrono::duration<double>(tx-ta).count();
       
-
-
-      //avgTime[id]=accumulate(hitTimes[id].begin(), hitTimes[id].end(),0)/hitTimes[id].size();   //identified as the biggest time waster in the code, is not used anyways at the moment
-
-
-
       //auto ty = std::chrono::high_resolution_clock::now();
       //TimeDebugger::line2 += std::chrono::duration<double>(ty-tx).count();
       //(*fCollection)[fhitID[id]]->SetTime(avgTime[id]);
       //if (id==66 && time > (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
       //G4cout << "collectedTime= " << (*fCollection)[fhitID[id]]->GetTime() <<G4endl;
+
+
       if ( time < (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
       
+
+
       //G4cout << "time= " << time <<G4endl;
       
 	 //if (id == 1 && time < (*fCollection)[fhitID[id]]->GetTime())
@@ -229,15 +238,12 @@ void A2SD::EndOfEvent(G4HCofThisEvent* HCE)
       fhitID[fHits[i]]=-1;
       //reset time vectors for TPC calculations
       //print time vectors: this was used to study time distribution in hit
-      //for (G4int k=0; k<int(hitTimes[fHits[i]].size()); k++){
-      //		G4cout<<hitTimes[fHits[i]][k]<<" "; //print each individual time
-      //}
-      //G4cout<<G4endl;
-      hitTimes[fHits[i]].clear();
+      
       fHits[i]=0;
     }
   fNhits=0;
   //G4cout<<"EndOfEvent( done"<<G4endl;
+  fTPCHitOrder.clear();
   
 
 }

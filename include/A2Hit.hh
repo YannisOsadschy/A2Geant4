@@ -3,6 +3,7 @@
 #define A2Hit_h 1
 
 #include <deque>
+#include <vector>
 
 #include "G4VHit.hh"
 #include "G4THitsCollection.hh"
@@ -65,12 +66,18 @@ public:
   G4int GetNParticles();
   G4int GetParticle();
 
-  //drift coefficients for TPC
-
+  //void SetSequenceIndexTPC(G4int sequenceIndexTPC){fSequenceIndexTPC = sequenceIndexTPC;}
+  //G4int GetSequenceIndexTPC() const {return fSequenceIndexTPC;}
+  void AppendHitTimeTPC(G4double hitTime){fHitTimesTPC.push_back(hitTime);}
+  std::vector<G4double> GetHitTimesTPC() const {return fHitTimesTPC;}
+  void ClearHitTimesTPC() {fHitTimesTPC.clear();}
 private:
+  //drift coefficients for TPC
   G4bool fHasDriftParametersTPC=false;
   DriftParametersTPC2 fDriftParametersTPC;
-  public:
+  //G4int fSequenceIndexTPC;
+  std::vector<G4double> fHitTimesTPC;
+public:
   void SetHasDriftParametersTPC(bool hasDriftParametersTPC){fHasDriftParametersTPC=hasDriftParametersTPC;}
   G4bool GetHasDriftParametersTPC(){return fHasDriftParametersTPC;}
   void SetDriftParametersTPC(double selectedPressure,

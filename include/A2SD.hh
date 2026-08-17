@@ -35,7 +35,6 @@ private:
   G4int fNhits;
 
   G4double *avgTime; //average of times in TPC anode
-  std::vector<double> *hitTimes; //to store all electron arrival times in TPC anode
 
 };
 

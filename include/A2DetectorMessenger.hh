@@ -12,6 +12,8 @@ class G4UIcmdWithAString;
 class G4UIcmdWithoutParameter;
 class G4UIcmdWithADoubleAndUnit;
 class G4UIcmdWith3VectorAndUnit;
+class G4UIcmdWithABool;
+class G4UIcmdWithADouble;
 
 class A2DetectorMessenger: public G4UImessenger
 {
@@ -20,7 +22,7 @@ class A2DetectorMessenger: public G4UImessenger
    ~A2DetectorMessenger();
     
     void SetNewValue(G4UIcommand*, G4String);
-    
+
   private:
     A2DetectorConstruction* fA2Detector;
     
@@ -54,7 +56,11 @@ class A2DetectorMessenger: public G4UImessenger
 
     G4UIcmdWithADoubleAndUnit* fTPCtemperatureCmd;
     G4UIcmdWithADoubleAndUnit* fTPCpressureCmd;
-    G4UIcmdWithADoubleAndUnit* fTPCefieldCmd;
+    G4UIcmdWithADoubleAndUnit* fTPCefieldCmd; 
+    G4UIcmdWithABool* fTPCSimulateElectronLossCmd;
+    G4UIcmdWithADouble* fTPCDetectorEfficiencyCmd;
+    G4UIcmdWithADouble* fTPCLambdaAttachementFactorCmd;
+
     G4UIcmdWithAString* fTPCMaterialCmd;
 
 

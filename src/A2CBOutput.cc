@@ -154,6 +154,7 @@ void A2CBOutput::SetBranches(){
     fTree->Branch("itpc",fitpc,"fitpc[fntpc]/I",basket);
     fTree->Branch("qtpc",fqtpc,"fqtpc[fntpc]/F",basket);
     fTree->Branch("ttpc",fttpc,"fttpc[fntpc]/F",basket);
+    fTree->Branch("tRawtpc",&ftRawtpc);
     //
   fTree->Branch("npiz",&fnpiz,"fnpiz/I",basket);
   fTree->Branch("ipiz",fipiz,"fipiz[fnpiz]/I",basket);
@@ -169,6 +170,7 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
   fnhits=fntaps=fnvtaps=fvhits=fntof=fnpiz=fnmwpc=fnhe3=fntpc=0;
   fetot=0;
   G4int hci=0;
+  ftRawtpc.clear();
   for(G4int i=0;i<CollSize;i++){
     //Get the ball hit info to be written to output
     A2HitsCollection* hc;
@@ -269,26 +271,24 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
       fntpc=hc_nhits;
       for(Int_t ii=0;ii<fntpc;ii++){
         A2Hit* hit=static_cast<A2Hit*>(hc->GetHit(ii));
-	//hit->Print();
-    fqtpc[ii]=hit->GetQdep()/eplus; //units???
-    fttpc[ii]=hit->GetTime()/ms;
+	    //hit->Print();
+        fqtpc[ii]=hit->GetQdep()/eplus; //units???
+        fttpc[ii]=hit->GetTime()/ms;
+        ftRawtpc.push_back(hit->GetHitTimesTPC());
         //ftpcx[ii]=hit->GetPos().x()/cm;
         //ftpcy[ii]=hit->GetPos().y()/cm;
         //ftpcz[ii]=hit->GetPos().z()/cm;
-    fitpc[ii]=hit->GetID();
-    if (hit->GetHasDriftParametersTPC() && !fHaveDriftParametersAlreadybeenWritten)
-    {   
-        fHaveDriftParametersAlreadybeenWritten=true;
-        DriftParametersTPC2 driftParameters = hit->GetDriftParametersTPC();
-        fFile->WriteObject(new TParameter<Double_t>("TPCselectedPressure", driftParameters.selectedPressure),"TPCselectedPressure");
-        fFile->WriteObject(new TParameter<Double_t>("TPCselectedEfield", driftParameters.selectedEfield),"TPCselectedEfield");
-        fFile->WriteObject(new TParameter<Double_t>("TPCvDrift", driftParameters.vDrift),"TPCvDrift");
-        fFile->WriteObject(new TParameter<Double_t>("TPClongDiff", driftParameters.longitudinalDiffusionCoefficient),"TPClongDiff");
-        fFile->WriteObject(new TParameter<Double_t>("TPCtransDiff", driftParameters.transversalDiffusionCoefficient),"TPCtransDiff");
-        G4cout<<driftParameters.selectedPressure<<G4endl;
-        G4cout<<driftParameters.selectedEfield<<G4endl;
-        G4cout<<driftParameters.vDrift<<G4endl;
-    }
+        fitpc[ii]=hit->GetID();
+        if (hit->GetHasDriftParametersTPC() && !fHaveDriftParametersAlreadybeenWritten)
+        {   
+          fHaveDriftParametersAlreadybeenWritten=true;
+          DriftParametersTPC2 driftParameters = hit->GetDriftParametersTPC();
+          fFile->WriteObject(new TParameter<Double_t>("TPCselectedPressure", driftParameters.selectedPressure),"TPCselectedPressure");
+          fFile->WriteObject(new TParameter<Double_t>("TPCselectedEfield", driftParameters.selectedEfield),"TPCselectedEfield");
+          fFile->WriteObject(new TParameter<Double_t>("TPCvDrift", driftParameters.vDrift),"TPCvDrift");
+          fFile->WriteObject(new TParameter<Double_t>("TPClongDiff", driftParameters.longitudinalDiffusionCoefficient),"TPClongDiff");
+          fFile->WriteObject(new TParameter<Double_t>("TPCtransDiff", driftParameters.transversalDiffusionCoefficient),"TPCtransDiff");
+        }
       }
     }
   }

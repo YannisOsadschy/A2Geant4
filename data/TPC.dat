@@ -12,11 +12,30 @@
 ## Be window thickness: 6
 TPC-Dim: 281.0 92.0 8 25.0 200.0 25.0 17.0 6.0
 ##
+##
+##
+##
 ## Radii of the Anode segments in mm
-Anode-Radii: 0.0 3.0 6.0 10.0 15.0 25.0 50.0
+##new1:
+##Anode-Radii: 0.0 3.0 6.0 10.0 15.0 25.0 50.0
+##new2:
+#Anode-Radii: 0. 3. 5. 7. 9. 12. 15. 50.
+##new3:
+Anode-Radii: 0. 3. 5.5 8. 10.5 15. 20. 50.
+##alicia:
+##Anode-Radii: 0.0 5.0 7.0 10.0 13.0 25.0 50.0
 ##
 ## Number of Anode Segments for a given ring 
-Anode-Segments: 1 7 14 14 14 14
+##new1
+##Anode-Segments: 1 7 14 14 14 14
+##new2
+#Anode-Segments: 6 12 16 14 14 1 1
+##new3
+Anode-Segments: 6 12 16 14 14 1 1
+##alicia:
+##Anode-Segments: 1 1 16 16 16 16
+##
+##
 ##
 ## Anode specifications in mm
 ## Thickness : 1.5

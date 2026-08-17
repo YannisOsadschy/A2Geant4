@@ -99,6 +99,8 @@ protected:
   Int_t fitpc[MAXSIZE_TPC]; //hit section index
   Float_t fqtpc[MAXSIZE_TPC]; //hit energy deposit
   Float_t fttpc[MAXSIZE_TPC]; //hit time
+  std::vector<std::vector<double>> ftRawtpc; //hit times
+
   
   Int_t fnpiz; //Number of hits in Pizza detector
   Int_t fipiz[MAXSIZE_PIZZA]; //hit sector indexes

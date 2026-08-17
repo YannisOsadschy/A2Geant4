@@ -14,6 +14,9 @@
 /A2/generator/SetPhiMin 0 deg
 /A2/generator/SetPhiMax 180 deg
 
+/A2/stepping/sampleElectrons true
+/A2/run/collectTrueData false
+
 ##gun settings to choose particle
 /gun/particle alpha
 /gun/position 0 0 0
