@@ -8,6 +8,9 @@
 #include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4UIcmdWith3VectorAndUnit.hh"
 #include "G4UIcmdWithoutParameter.hh"
+#include "G4UIcmdWithABool.hh"
+#include "G4UIcmdWithADouble.hh"
+
 #include "G4ThreeVector.hh"
 #include "G4Version.hh"
 
@@ -196,6 +199,31 @@ A2DetectorMessenger::A2DetectorMessenger(
   fTPCMaterialCmd->SetGuidance("Set active Gas (available options: He3ActiveGas, He4ActiveGas)");
   fTPCMaterialCmd->SetParameterName("activeGas",false);
   fTPCMaterialCmd->AvailableForStates(cmdState,G4State_Idle);
+  
+  
+  fTPCSimulateElectronLossCmd = new G4UIcmdWithABool("/A2/det/simulateTPCelectronLoss",this);
+  fTPCSimulateElectronLossCmd->SetGuidance("Should attachment and detection efficiency be simulated for TPC electrons?");
+  fTPCSimulateElectronLossCmd->SetParameterName("simulateLoss", true);
+  fTPCSimulateElectronLossCmd->SetDefaultValue(true);
+  fTPCSimulateElectronLossCmd->AvailableForStates(cmdState,G4State_Idle);
+
+
+  fTPCDetectorEfficiencyCmd = new G4UIcmdWithADouble("/A2/det/setTPCdetectionEfficiency",this);
+  fTPCDetectorEfficiencyCmd->SetGuidance("Set detection efficiency of the Cathode of the TPC");
+  fTPCDetectorEfficiencyCmd->SetParameterName("efficiency",true);
+  fTPCDetectorEfficiencyCmd->SetDefaultValue(1.);
+  fTPCDetectorEfficiencyCmd->AvailableForStates(cmdState,G4State_Idle);
+
+
+  fTPCLambdaAttachementFactorCmd = new G4UIcmdWithADouble("/A2/det/setTPCattachementMeanFreePath",this);
+  fTPCLambdaAttachementFactorCmd->SetGuidance("Set Mean free Path of attachement processes in the TPC in units of the distance between the cathode and anode");
+  fTPCLambdaAttachementFactorCmd->SetParameterName("meanFreePath",true);
+  fTPCLambdaAttachementFactorCmd->SetDefaultValue(1.e6);
+  fTPCLambdaAttachementFactorCmd->AvailableForStates(cmdState,G4State_Idle);
+
+
+
+
 }
 
 
@@ -230,6 +258,9 @@ A2DetectorMessenger::~A2DetectorMessenger()
   delete fTPCpressureCmd;
   delete fTPCefieldCmd;
   delete fTPCMaterialCmd;
+  delete fTPCLambdaAttachementFactorCmd;
+  delete fTPCDetectorEfficiencyCmd;
+  delete fTPCSimulateElectronLossCmd;
  }
 
 
@@ -327,5 +358,14 @@ void A2DetectorMessenger::SetNewValue(G4UIcommand* command,G4String newValue)
   
   if( command == fTPCMaterialCmd )
     { fA2Detector->SetTPCtargetGas(newValue);}
+
+  if( command == fTPCSimulateElectronLossCmd )
+    { fA2Detector->SetTPCSimulateElectronLoss(fTPCSimulateElectronLossCmd->GetNewBoolValue(newValue));}
+   
+  if( command == fTPCLambdaAttachementFactorCmd )
+    { fA2Detector->SetTPCLambdaAttachementFactor(fTPCLambdaAttachementFactorCmd->GetNewDoubleValue(newValue));}
+  
+  if( command == fTPCDetectorEfficiencyCmd )
+    { fA2Detector->SetTPCDetectionSurvivalProbability(fTPCDetectorEfficiencyCmd->GetNewDoubleValue(newValue));}
   
  }

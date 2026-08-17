@@ -12,11 +12,26 @@ class A2UserRegionInformation : public G4VUserRegionInformation
         double GetEfield() const {return fEfield;}
         void SetTemperature(double temperature) {fTemperature = temperature;}
         double GetTemperature() const {return fTemperature;}
+        void SetSimulateElectronLoss(bool simulateElectronLoss){fSimulateElectronLoss=simulateElectronLoss;}
+	    void SetLambdaAttachementFactor(double lambdaAttachementFactor){fLambdaAttachementFactor=lambdaAttachementFactor;}
+	    void SetDetectionSurvivalProbability(double detectionSurvivalProbability){fDetectionSurvivalProbability=detectionSurvivalProbability;}
+        void SetAnodeCathodeDistance(double anodeCathodeDistance){fAnodeCathodeDistance=anodeCathodeDistance;}
+        bool GetSimulateElectronLoss() const{return fSimulateElectronLoss;}
+        double GetLambdaAttachementFactor() const{return fLambdaAttachementFactor;}
+        double GetDetectionSurvivalProbability() const{return fDetectionSurvivalProbability;}
+        double GetAnodeCathodeDistance() const{return fAnodeCathodeDistance;}
+
         void Print() const override {}
 
     private:
         double fEfield;
         double fTemperature;
+        bool fSimulateElectronLoss;
+        double fLambdaAttachementFactor;
+        double fDetectionSurvivalProbability;
+        double fAnodeCathodeDistance;
+
+
 };
 
 #endif

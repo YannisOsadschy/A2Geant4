@@ -34,6 +34,10 @@ class A2DriftandHitLogic
         void ProcessHit(G4ThreeVector, G4double, G4double, G4int, G4int, G4double);
         void SampleEdep(const G4Step* aStep);
 
+        //void SetSimulateElectronLoss(G4bool simulateElectronLoss) {fSimulateElectronLoss=simulateElectronLoss;}
+        G4bool GetSimulateElectronLoss() const {return fSimulateElectronLoss;}
+        G4bool DoesElectronSurvive(G4double) const;
+
     private:
         struct Point
         {
@@ -59,6 +63,11 @@ class A2DriftandHitLogic
     	G4StepPoint* fFakePreStepPoint;
         G4StepPoint* fFakePostStepPoint;
         G4double fWorkFunction;
+
+        G4bool fSimulateElectronLoss;
+        G4double fLambdaAttachementFactor;
+        G4double fDetectionSurvivalProbability;
+        G4double fAnodeCathodeDistance;
 };
 
 #endif

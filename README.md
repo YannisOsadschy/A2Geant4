@@ -259,12 +259,16 @@ Command                                        | Meaning
 ### Active Targets
 Command                                     | Meaning
 :-----------------------------------        |:-------
-`/A2/det/setTarget ActiveHe3`               | active helium target
+`/A2/det/setTarget ActiveHe3`               | active helium target  (legacy, material needs to be set with "setTPCMaterial", 
+                                              however programm does not run without the command)
 `/A2/det/setTarget TPC`                     | time projection chamber 
 `/A2/det/setTPCtemperature 293.15 kelvin`   | temperature of the active gas             (works only for A2TPC)
 `/A2/det/setTPCpressure 10. bar`            | pressure of the active gas                (works only for A2TPC)
 `/A2/det/setTPCefield 100000. V/m`          | constant electric field inside the TPC    (works only for A2TPC)
 `/A2/det/setTPCMaterial He4ActiveGas`       | selection of active gas                   (works only for A2TPC)
+`/A2/det/simulateTPCelectronLoss`           | simulate electron loss                    (works only for A2TPC)
+`/A2/det/setTPCdetectionEfficiency`         | detection efficiency of the anode         (works only for A2TPC)
+`/A2/det/setTPCattachementMeanFreePath?`    | mean free path of attachement             (works only for A2TPC)
 
 ### General Target Options
 Command                        | Meaning

@@ -83,7 +83,10 @@ A2DetectorConstruction::A2DetectorConstruction(G4String detSet)
   fTPCTemperature = 293.15;
   fTPCPressure = 20.;
   fTPCEfield = 200.;
-  fTPCTargetGas = "He4ActiveGas";
+  fTPCTargetGas = "He3ActiveGas";
+  fTPCSimulateElectronLoss = false;
+  fTPCDetectionSurvivalProbability = 1.;
+  fTPCLambdaAttachementFactor = 10000000.; //just a very large number
 
   //has to be done here in case use new material for target
   DefineMaterials();
@@ -239,6 +242,9 @@ G4VPhysicalVolume* A2DetectorConstruction::Construct()
         tpcTarget->SetTemperature(fTPCTemperature);
         tpcTarget->SetHePressure(fTPCPressure);
         tpcTarget->SetEfield(fTPCEfield);
+        tpcTarget->SetSimulateElectronLoss(fTPCSimulateElectronLoss);
+	      tpcTarget->SetLambdaAttachementFactor(fTPCLambdaAttachementFactor);
+	      tpcTarget->SetDetectionSurvivalProbability(fTPCDetectionSurvivalProbability);
         fTarget = static_cast<A2Target*>(tpcTarget);
     }
     else{G4cerr<<"A2DetectorConstruction::Construct() Target type does not exist. See DetectorSetup.mac or README"<<G4endl;exit(1);}

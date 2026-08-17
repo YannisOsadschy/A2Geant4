@@ -52,6 +52,7 @@ A2DriftandHitLogic::A2DriftandHitLogic(G4Region* actVol)
   	fpNavigator        = new G4Navigator(); //navigator to find SD
 	fNaviSetup = false; //if setup has already been done
 	//read in data to set drift velocity, diffusion coefficients
+    
 	SetConstants(actVol);
 }
 
@@ -69,7 +70,7 @@ A2DriftandHitLogic::TransportValues A2DriftandHitLogic::GetTransportValues(G4Str
     //auto t0 = std::chrono::high_resolution_clock::now();
     //G4cout<<"Transporting delta electron of energy "<< ekin_keV <<" keV"<<G4endl; //debugging message
 	/****transport each electron to anode ****/
-	G4double z_pos = -115.5; //set final z position to anode z position
+	G4double z_pos = -fAnodeCathodeDistance/2; //set final z position to anode z position
 	G4double pathLength = z_pos - z_mm; //total length to final z position in mm
 
 	//use Gaussians as defined by Fabian Metzger in his TPC work
@@ -174,25 +175,47 @@ void A2DriftandHitLogic::SampleEdep(const G4Step* aStep)
         G4double randFlat = RandFlat::shoot();
         G4ThreeVector positionElec = preStepPosition + randFlat * stepLength * unitDirection;
         G4double timeElec = preStepTime + randFlat * deltaTime;
-        G4double eKin_keV = 0.000001;   //small value != 0 otherwise senitive detector does not work 
-        TransportValues transportValues = GetTransportValues("e-", eKin_keV, timeElec, positionElec.x(),
-                                            positionElec.y(), positionElec.z());
-        ProcessHit(transportValues.position, transportValues.eKin_keV, transportValues.time, trackID, parentID, -1);
-    }
+        G4double eKin_keV = 0.000001;   //small value != 0 otherwise senitive detector does not work
+        if (!fSimulateElectronLoss || DoesElectronSurvive(positionElec.z()))
+	    {
+            TransportValues transportValues = GetTransportValues("e-", eKin_keV, timeElec, positionElec.x(),
+                                                positionElec.y(), positionElec.z());
+            ProcessHit(transportValues.position, transportValues.eKin_keV, transportValues.time, trackID, parentID, -1);
+        }
     //auto t1 = std::chrono::high_resolution_clock::now();
     //TimeDebugger::sampleEdepTime += std::chrono::duration<double>(t1-t0).count();
+    }
 }
 
-
-
+G4bool A2DriftandHitLogic::DoesElectronSurvive(G4double zTrue) const
+{
+	G4double zDistance=zTrue+fAnodeCathodeDistance/2;
+	G4double lambdaAttachement = fAnodeCathodeDistance*fLambdaAttachementFactor ; //free path for electron attachement
+	G4double fAttachmentSurvivalProbability = exp(-zDistance/lambdaAttachement);
+	G4double uniformX1 = RandFlat::shoot();  //losses along the path
+	G4double uniformX2 = RandFlat::shoot();  //detector losses
+	if (fAttachmentSurvivalProbability > uniformX1 && fDetectionSurvivalProbability > uniformX2)
+	{
+		return true;
+	}
+    else
+    {
+        return false;
+    }
+}
 
 
 /**** Assign gas parameters depending on isotope, fPressure of helium ****/
 void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
 	G4String name=gasRegion->GetRootLogicalVolumeIterator()[0]->GetMaterial()->GetName();
 	fPressure = gasRegion->GetRootLogicalVolumeIterator()[0]->GetMaterial()->GetPressure()/bar;
-    fEfield = static_cast<A2UserRegionInformation*>(gasRegion->GetUserInformation())->GetEfield()/(volt/mm);
-    fTemperature = static_cast<A2UserRegionInformation*>(gasRegion->GetUserInformation())->GetTemperature();
+    A2UserRegionInformation* regionInfo = static_cast<A2UserRegionInformation*>(gasRegion->GetUserInformation());
+    fEfield = regionInfo->GetEfield()/(volt/mm);
+    fTemperature = regionInfo->GetTemperature();
+    fSimulateElectronLoss = regionInfo->GetSimulateElectronLoss();
+    fLambdaAttachementFactor = regionInfo->GetLambdaAttachementFactor();
+    fDetectionSurvivalProbability= regionInfo->GetDetectionSurvivalProbability();
+    fAnodeCathodeDistance = regionInfo->GetAnodeCathodeDistance();
     std::string inputString;
 	if (name.contains("3"))
     { //helium-3
@@ -204,6 +227,7 @@ void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
         fWorkFunction = 42.7e-6; //place holder
 		inputString = "data/drift_cali_He4.tsv";
 	}
+
 
     double eps = 1e-8; //to supress numrical floating point errors
     std::ifstream file(inputString.c_str());

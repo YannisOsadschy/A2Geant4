@@ -205,7 +205,8 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
     if (fSampleElectrons)
     {
         G4Region* region = aStep->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume()->GetRegion();
-        if (region->GetName()=="ActiveGas")
+        G4String particleName = aStep->GetTrack()->GetParticleDefinition()->GetParticleName();
+        if (region->GetName()=="ActiveGas" && (particleName=="alpha" || particleName=="He3"))
         {
             if (!fDrifter)
             {

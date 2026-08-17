@@ -70,17 +70,23 @@ void A2DriftModel::DoIt(const G4FastTrack& fastTrack, G4FastStep& fastStep){
 //Generate electron position, time when reaching anode
 void A2DriftModel::Transport(G4FastStep& fastStep,const G4FastTrack& fastTrack, G4String particleName, 
                             double ekin_keV, double t, double x_mm, double y_mm, double z_mm){
-	A2DriftandHitLogic::TransportValues transportValues 
-    = fDrifter.GetTransportValues(particleName, ekin_keV, t, x_mm, y_mm, z_mm);
-    fastStep.SetPrimaryTrackFinalProperTime(transportValues.time);
-	fastStep.SetPrimaryTrackPathLength(transportValues.pathLength*mm); //travel calculated distance
-	fastStep.SetPrimaryTrackFinalPosition(transportValues.position); //final calculated position
-	fastStep.SetTotalEnergyDeposited(transportValues.eKin_keV*keV); //deposit all energy
-	/**** kill step and call hit ****/
-    fDrifter.ProcessHit(transportValues.position,transportValues.eKin_keV,transportValues.time, 
-                    static_cast<A2UserTrackInformation*>((fastTrack.GetPrimaryTrack())->GetUserInformation())->GetTrackID(), 
-                    static_cast<A2UserTrackInformation*>((fastTrack.GetPrimaryTrack())->GetUserInformation())->GetPartID(), 
-                    fastTrack.GetPrimaryTrack()->GetDynamicParticle()->GetCharge());
+	//interrupt flow here
+	if (!fDrifter.GetSimulateElectronLoss() || fDrifter.DoesElectronSurvive(z_mm))
+	{
+		A2DriftandHitLogic::TransportValues transportValues 
+	    = fDrifter.GetTransportValues(particleName, ekin_keV, t, x_mm, y_mm, z_mm);
+
+	    fastStep.SetPrimaryTrackFinalProperTime(transportValues.time);
+		fastStep.SetPrimaryTrackPathLength(transportValues.pathLength*mm); //travel calculated distance
+		fastStep.SetPrimaryTrackFinalPosition(transportValues.position); //final calculated position
+		fastStep.SetTotalEnergyDeposited(transportValues.eKin_keV*keV); //deposit all energy
+		/**** kill step and call hit ****/
+	    fDrifter.ProcessHit(transportValues.position,transportValues.eKin_keV,transportValues.time, 
+	                    static_cast<A2UserTrackInformation*>((fastTrack.GetPrimaryTrack())->GetUserInformation())->GetTrackID(), 
+	                    static_cast<A2UserTrackInformation*>((fastTrack.GetPrimaryTrack())->GetUserInformation())->GetPartID(), 
+	                    fastTrack.GetPrimaryTrack()->GetDynamicParticle()->GetCharge());
+	}
+	//continue flow here
 	fastStep.KillPrimaryTrack();
 }
 

@@ -48,6 +48,9 @@ public: //declare all public functions
     void SetHeMaterial(G4String material){fHeMaterial=material;}
     void SetEfield(G4double Efield){fEfield=Efield;}
     void SetTemperature(G4double temperature){fTemperature=temperature;}
+	void SetSimulateElectronLoss(G4bool simulateElectronLoss){fSimulateElectronLoss=simulateElectronLoss;}
+	void SetLambdaAttachementFactor(G4double lambdaAttachementFactor){fLambdaAttachementFactor=lambdaAttachementFactor;}
+	void SetDetectionSurvivalProbability(G4double detectionSurvivalProbability){fDetectionSurvivalProbability=detectionSurvivalProbability;}
 
 private: //private declarations
 
@@ -140,6 +143,10 @@ private: //private declarations
 	G4String fHeMaterial;
     G4double fEfield; //V/mm
     G4double fTemperature; //K
+
+	G4bool fSimulateElectronLoss = false;
+    G4double fLambdaAttachementFactor;
+    G4double fDetectionSurvivalProbability;
 
 	//for placing anode
 	//G4VPhysicalVolume** fAnodePhysi;

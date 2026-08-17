@@ -80,6 +80,10 @@ class A2DetectorConstruction : public G4VUserDetectorConstruction
       exit(0);
     }
   }
+  void SetTPCSimulateElectronLoss(G4bool simulateElectronLoss){fTPCSimulateElectronLoss=simulateElectronLoss;}
+	void SetTPCLambdaAttachementFactor(G4double lambdaAttachementFactor){fTPCLambdaAttachementFactor=lambdaAttachementFactor;}
+	void SetTPCDetectionSurvivalProbability(G4double detectionSurvivalProbability){fTPCDetectionSurvivalProbability=detectionSurvivalProbability;}
+  
 
   A2Target* GetTarget(){return fTarget;}
 
@@ -157,7 +161,10 @@ public:
   G4double fTPCTemperature;
   G4double fTPCPressure;
   G4double fTPCEfield;
-  G4String fTPCTargetGas; 
+  G4String fTPCTargetGas;
+  G4bool fTPCSimulateElectronLoss;
+  G4double fTPCLambdaAttachementFactor;
+  G4double fTPCDetectionSurvivalProbability;
 
 
 private:

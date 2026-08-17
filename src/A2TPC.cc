@@ -90,6 +90,8 @@ A2TPC::A2TPC(){
 	fIsOverlapVol=true; //check overlaps in geometry
 
 	//read dimensions from a parameter file
+	fSimulateElectronLoss = false;
+
 	ReadParameters("data/TPC.dat");
 }
 
@@ -350,10 +352,6 @@ void A2TPC::MakeAnodeCathode(){
     G4VisAttributes* grey   = new G4VisAttributes( G4Colour(0.5,0.5,0.5)  );
     fAnodeLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
     
-
-    std::vector<int> fAnodeSegmentsN = {1,7,14,14,14,14};
-    std::vector<double> fAnodeSegmentsRadii ={0.,3.,6.,10.,15.,25.,50.};
-
     int anodeSegmentID=0;
     for (std::size_t i=0;i<fAnodeSegmentsRadii.size()-1;++i)
     {
@@ -658,6 +656,12 @@ void A2TPC::MakeField(){
     A2UserRegionInformation* regionInfo = new A2UserRegionInformation();
     regionInfo->SetEfield(fEfield);
     regionInfo->SetTemperature(fTemperature);
+	regionInfo->SetSimulateElectronLoss(fSimulateElectronLoss);
+	regionInfo->SetLambdaAttachementFactor(fLambdaAttachementFactor);
+	regionInfo->SetDetectionSurvivalProbability(fDetectionSurvivalProbability);
+	regionInfo->SetAnodeCathodeDistance(fLength-(fCathodeDistance+fAnodeDistance));
+
+
     fRegionActiveGas->SetUserInformation(regionInfo);
 
 	/***** set specific production cuts for active gas region *****/
@@ -828,7 +832,6 @@ void A2TPC::ReadParameters(const char* file){
                 }
         }
 }
-
 
 /***** this function defines the materials used to build the target ******/
 void A2TPC::DefineMaterials()
