@@ -46,6 +46,7 @@ A2DriftandHitLogic::A2DriftandHitLogic(G4Region* actVol)
 	//initiate pointers
 	fFakeStep = new G4Step(); //step used to call hit in SD
     fFakeTrack = new G4Track(); //dummy Track just to hold A2UserTrackinformation, which is required for A2SD to work properly
+    fFakeTrack->SetUserInformation(new A2UserTrackInformation());
 	fFakePreStepPoint  = fFakeStep->GetPreStepPoint(); //step point
   	fFakePostStepPoint = fFakeStep->GetPostStepPoint(); //step point
   	fTouchableHandle   = new G4TouchableHistory(); //touchable for step
@@ -60,6 +61,7 @@ A2DriftandHitLogic::~A2DriftandHitLogic()
 {
     //remove objects requiring manual deletion
 	delete fFakeStep;
+    delete fFakeTrack;
   	delete fpNavigator;
 }
 
@@ -117,7 +119,7 @@ void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G
  	}
     //auto tA = std::chrono::high_resolution_clock::now();
     //TimeDebugger::navigatorTime += std::chrono::duration<double>(tA-t0).count();
-    A2UserTrackInformation* anInfo = new A2UserTrackInformation();
+    A2UserTrackInformation* anInfo = static_cast<A2UserTrackInformation*>(fFakeTrack->GetUserInformation());
     anInfo->SetTrackID(trackID);
     anInfo->SetPartID(partID);
     anInfo->SetHasDriftParametersTPC(true);
@@ -127,7 +129,6 @@ void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G
     //and pass the parameters to A2CBOutput via the A2DetectorConstruction
     anInfo->SetDriftParametersTPC(fPressure,fEfield,fDriftVel,fLongDiff,fTransDiff);
     //G4cout<<"vel"<<fDriftVel<<G4endl;
-    fFakeTrack->SetUserInformation(anInfo);
     const_cast<G4DynamicParticle*>(fFakeTrack->GetDynamicParticle())->SetCharge(charge);
   	/**** fill G4Step with information necessary for the sensitive detector ****/
   	fFakeStep->SetTrack(fFakeTrack);
@@ -217,15 +218,20 @@ void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
     fDetectionSurvivalProbability= regionInfo->GetDetectionSurvivalProbability();
     fAnodeCathodeDistance = regionInfo->GetAnodeCathodeDistance();
     std::string inputString;
-	if (name.contains("3"))
+	if (name == "He3ActiveGas")
     { //helium-3
-        fWorkFunction = 42.7e-6; //place holder
+        fWorkFunction = 42.7e-6;
         inputString = "data/drift_cali_He3.tsv";
 	} 
-    else if (name.contains("4"))
+    else if (name=="He4ActiveGas")
     { //helium-4
-        fWorkFunction = 42.7e-6; //place holder
+        fWorkFunction = 42.7e-6;
 		inputString = "data/drift_cali_He4.tsv";
+	}
+    else if (name=="D2GasPure")
+    { //deuterium
+        fWorkFunction = 36.5e-6 ;
+		inputString = "data/drift_cali_D2.tsv";
 	}
 
 
@@ -483,66 +489,3 @@ void A2DriftandHitLogic::InterpolateDriftConstants(std::vector<A2DriftandHitLogi
         }
     }
 }
-
-
-
-
-
-
-
-
-/**** Assign gas parameters depending on isotope, fPressure of helium ****/
-/*
-void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
-	G4String name=gasRegion->GetRootLogicalVolumeIterator()[0]->GetMaterial()->GetName();
-	G4double fPressure = gasRegion->GetRootLogicalVolumeIterator()[0]->GetMaterial()->GetPressure()/bar;
-	G4double p_bar[6]={5,10,15,20,25,30}; //supported pressures
-	fDriftVel=fTransDiff=fLongDiff=0; //initialize
-	//set the correct set of constants for helium isotope
-	if (name.contains("3")){ //helium-3
-		G4double v[6]={7825,5445,4498,3940,3540,3235};
-		G4double dl[6]={0.0421,0.0310,0.0259,0.0236,0.0215,0.0202};
-		G4double dt[6]={0.0591,0.0447,0.0370,0.0329,0.0294,0.0275};
-	for (G4int i=0; i>6; i++){
-		if (fPressure == p_bar[i]){ //if fPressure at exact point
-			fDriftVel = v[i]; //use exact values
-			fTransDiff = dt[i];
-			fLongDiff = dl[i];
-			}
-		}
-	if (fDriftVel ==0){ //if none of the exact values are found
-		//make some splines and use those
-		TSpline3* v_spline = new TSpline3("v_spline",p_bar,v,6);
-		TSpline3* dt_spline = new TSpline3("dt_spline",p_bar,dt,6);
-		TSpline3* dl_spline = new TSpline3("dl_spline",p_bar,dl,6);
-		fDriftVel = v_spline->Eval(fPressure);
-		fTransDiff=dt_spline->Eval(fPressure);
-		fLongDiff=dl_spline->Eval(fPressure);
-		}	
-	} else { //helium-4
-		G4double v[6]={7680,5297,4367,3830,3437,3145};
-		G4double dl[6]={0.0433,0.0321,0.0266,0.0243,0.0220,0.0209};
-		G4double dt[6]={0.0601,0.0462,0.0381,0.0332,0.0307,0.0289};
-		for (G4int i=0; i>6; i++){
-			if (fPressure == p_bar[i]){ //if fPressure at exact point
-				fDriftVel = v[i]; //use exact values
-				fTransDiff = dt[i];
-				fLongDiff = dl[i];
-			}
-		}
-	if (fDriftVel ==0){ //if no exact value found
-		//make some splines and use those
-		TSpline3* v_spline = new TSpline3("v_spline",p_bar,v,6);
-		TSpline3* dt_spline = new TSpline3("dt_spline",p_bar,dt,6);
-		TSpline3* dl_spline = new TSpline3("dl_spline",p_bar,dl,6);
-		fDriftVel = v_spline->Eval(fPressure);
-		fTransDiff=dt_spline->Eval(fPressure);
-		fLongDiff=dl_spline->Eval(fPressure);
-		}		
-	}
-	G4cout<<name<<" "<<fPressure<<" "<<fDriftVel<<" "<<fTransDiff<<" "<<fLongDiff<<G4endl;
-}
-
-*/
-
-
