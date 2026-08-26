@@ -832,9 +832,330 @@ void A2TPC::ReadParameters(const char* file){
                 }
         }
 }
+// This revision of the material definitions was developed with the assistance
+// of ChatGPT (OpenAI), partly due to time constraints during the thesis work.
+void A2TPC::DefineMaterials()
+{
+    
+    G4double density, fractionmass;
+	G4int ncomponents;
+	//G4double pressure, temperature, a, z;
+
+	/***** beryllium used in target windows *****/
+	G4Material* BerylliumW = new G4Material("ATBerylliumW", density = 1.8480*g/cm3, ncomponents = 7);
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(14), 0.06*perCent);      //Si
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(4), 98.73*perCent);      //Be
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(6), 0.15*perCent);       //C
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(8), 0.75*perCent);       //O
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(12), 0.08*perCent);      //Mg
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(13), 0.1*perCent);       //Al
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(26), 0.13*perCent);      //Fe
+
+	/***** anode and cathode materials ****/
+        //copied from online source
+        //Anode G-10
+        G4Material* G10 = new G4Material("G-10", density= 1.700*g/cm3, ncomponents=4);
+        G10->AddElement(fNistManager->FindOrBuildElement(14), 1); //silicon
+        G10->AddElement(fNistManager->FindOrBuildElement(8), 2); //oxygen
+        G10->AddElement(fNistManager->FindOrBuildElement(6), 3); //carbon
+        G10->AddElement(fNistManager->FindOrBuildElement(1), 3); //hydrogen
+        //Anode copper
+        //G4Material* Cu = new G4Material("Copper",density= 8.960*g/cm3,ncomponents=1);
+        //Cu->AddElement(fNistManager->FindOrBuildElement(29),1);
+        //Cathode aluminum
+        G4Material* Al = new G4Material("Aluminum", density= 2.700*g/cm3,ncomponents=1);
+        Al->AddElement(fNistManager->FindOrBuildElement(13),1);
+    
+	
+	/***** Active gas from A2ActiveHe3.cc *****/
+	//Gas mixture and He3 management----------------------------------------------------
+
+	    /***** Active target gases *****/
+
+    const G4double gasPressure    = fHePressure;
+    const G4double gasTemperature = fTemperature;
+
+    const G4double molarGasConstant =
+        8.31446261815324 * joule / (mole * kelvin);
+
+
+    // -------------------------------------------------------------------------
+    // Isotopes and elements
+    // -------------------------------------------------------------------------
+
+    G4Isotope* H1Isotope =
+        new G4Isotope("ATH1Isotope", 1, 1);
+
+    G4Element* ATH =
+        new G4Element("ATH", "H1", 1);
+
+    ATH->AddIsotope(H1Isotope, 100.*perCent);
+
+
+    G4Isotope* DIsotope =
+        new G4Isotope("ATDeuteriumIsotope", 1, 2);
+
+    G4Element* ATD =
+        new G4Element("ATDeuterium", "D", 1);
+
+    ATD->AddIsotope(DIsotope, 100.*perCent);
+
+
+    G4Isotope* He3Isotope =
+        new G4Isotope("ATHe3Isotope", 2, 3);
+
+    G4Element* ATHe3 =
+        new G4Element("ATHe3", "He3", 1);
+
+    ATHe3->AddIsotope(He3Isotope, 100.*perCent);
+
+
+    G4Isotope* He4Isotope =
+        new G4Isotope("ATHe4Isotope", 2, 4);
+
+    G4Element* ATHe4 =
+        new G4Element("ATHe4", "He4", 1);
+
+    ATHe4->AddIsotope(He4Isotope, 100.*perCent);
+
+
+    G4Element* ATN =
+        fNistManager->FindOrBuildElement(7);
+
+
+    // -------------------------------------------------------------------------
+    // Molar masses
+    // -------------------------------------------------------------------------
+
+    const G4double molarMassH1  = ATH->GetA();
+    const G4double molarMassD   = ATD->GetA();
+    const G4double molarMassHe3 = ATHe3->GetA();
+    const G4double molarMassHe4 = ATHe4->GetA();
+    const G4double molarMassN   = ATN->GetA();
+
+    const G4double molarMassH2 = 2.0 * molarMassH1;
+    const G4double molarMassD2 = 2.0 * molarMassD;
+    const G4double molarMassN2 = 2.0 * molarMassN;
+
+
+    // -------------------------------------------------------------------------
+    // Pure gas densities
+    // Ideal-gas approximation: rho = p M / (R T)
+    // -------------------------------------------------------------------------
+
+    const G4double he3GasPureDensity =
+        gasPressure * molarMassHe3
+        / (molarGasConstant * gasTemperature);
+
+    const G4double he4GasPureDensity =
+        gasPressure * molarMassHe4
+        / (molarGasConstant * gasTemperature);
+
+    const G4double d2GasPureDensity =
+        gasPressure * molarMassD2
+        / (molarGasConstant * gasTemperature);
+
+
+    // -------------------------------------------------------------------------
+    // Active helium gas composition
+    //
+    // Assumption:
+    //   90 mol-% helium
+    //   10 mol-% H2
+    // -------------------------------------------------------------------------
+
+    const G4double activeHeliumMoleFraction = 90.*perCent;
+    const G4double activeH2MoleFraction     = 10.*perCent;
+
+
+    // -------------------------------------------------------------------------
+    // He3 + H2
+    // -------------------------------------------------------------------------
+
+    const G4double he3ActiveMolarMass =
+        activeHeliumMoleFraction * molarMassHe3
+        + activeH2MoleFraction * molarMassH2;
+
+    const G4double he3ActiveDensity =
+        gasPressure * he3ActiveMolarMass
+        / (molarGasConstant * gasTemperature);
+
+    const G4double he3ActiveHeMassFraction =
+        activeHeliumMoleFraction * molarMassHe3
+        / he3ActiveMolarMass;
+
+    const G4double he3ActiveHMassFraction =
+        activeH2MoleFraction * molarMassH2
+        / he3ActiveMolarMass;
+
+
+    // -------------------------------------------------------------------------
+    // He4 + H2
+    // -------------------------------------------------------------------------
+
+    const G4double he4ActiveMolarMass =
+        activeHeliumMoleFraction * molarMassHe4
+        + activeH2MoleFraction * molarMassH2;
+
+    const G4double he4ActiveDensity =
+        gasPressure * he4ActiveMolarMass
+        / (molarGasConstant * gasTemperature);
+
+    const G4double he4ActiveHeMassFraction =
+        activeHeliumMoleFraction * molarMassHe4
+        / he4ActiveMolarMass;
+
+    const G4double he4ActiveHMassFraction =
+        activeH2MoleFraction * molarMassH2
+        / he4ActiveMolarMass;
+
+
+    // -------------------------------------------------------------------------
+    // Legacy ATGasMix
+    //
+    // This preserves the EXISTING Geant4 interpretation:
+    // 99.95 mass-% He3 + 0.05 mass-% nitrogen.
+    //
+    // Verify experimentally whether the quoted 0.05 % nitrogen is actually
+    // specified as mass fraction or as mole/volume fraction.
+    // -------------------------------------------------------------------------
+
+    const G4double gasMixHe3MassFraction =
+        99.95*perCent;
+
+    const G4double gasMixNitrogenMassFraction =
+        0.05*perCent;
+
+    const G4double gasMixMolarMass =
+        1.0 /
+        (
+            gasMixHe3MassFraction / molarMassHe3
+            + gasMixNitrogenMassFraction / molarMassN2
+        );
+
+    const G4double gasMixDensity =
+        gasPressure * gasMixMolarMass
+        / (molarGasConstant * gasTemperature);
+
+
+    // -------------------------------------------------------------------------
+    // Materials
+    // -------------------------------------------------------------------------
+
+    G4Material* GasMix =
+        new G4Material(
+            "ATGasMix",
+            gasMixDensity,
+            2,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    GasMix->AddElement(
+        ATHe3,
+        gasMixHe3MassFraction
+    );
+
+    GasMix->AddElement(
+        ATN,
+        gasMixNitrogenMassFraction
+    );
+
+
+    G4Material* He3GasPure =
+        new G4Material(
+            "He3GasPure",
+            he3GasPureDensity,
+            1,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He3GasPure->AddElement(
+        ATHe3,
+        1
+    );
+
+
+    G4Material* He3ActiveGas =
+        new G4Material(
+            "He3ActiveGas",
+            he3ActiveDensity,
+            2,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He3ActiveGas->AddElement(
+        ATHe3,
+        he3ActiveHeMassFraction
+    );
+
+    He3ActiveGas->AddElement(
+        ATH,
+        he3ActiveHMassFraction
+    );
+
+
+    G4Material* He4GasPure =
+        new G4Material(
+            "He4GasPure",
+            he4GasPureDensity,
+            1,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He4GasPure->AddElement(
+        ATHe4,
+        1
+    );
+
+
+    G4Material* He4ActiveGas =
+        new G4Material(
+            "He4ActiveGas",
+            he4ActiveDensity,
+            2,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He4ActiveGas->AddElement(
+        ATHe4,
+        he4ActiveHeMassFraction
+    );
+
+    He4ActiveGas->AddElement(
+        ATH,
+        he4ActiveHMassFraction
+    );
+
+
+    G4Material* D2GasPure =
+        new G4Material(
+            "D2GasPure",
+            d2GasPureDensity,
+            1,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    D2GasPure->AddElement(
+        ATD,
+        2
+    );
+}
+
 
 /***** this function defines the materials used to build the target ******/
-void A2TPC::DefineMaterials()
+void A2TPC::DefineMaterialsLegacy()
 {
     
     G4double density, fractionmass;
@@ -884,7 +1205,6 @@ void A2TPC::DefineMaterials()
 	//G4double he3density = 0.004125*g/cm3; //25bar, calculated from ideal gas law
 	//G4double he3density = 0.00495*g/cm3; //30bar, calculated from ideal gas law
 	G4double he3density = (fHePressure/(20*bar))*0.0033*g/cm3; //scale Phil's IG calculation according to pressure from parameter file 
-
 	G4Material* GasMix = new G4Material("ATGasMix", he3density, ncomponents = 2,kStateGas,fTemperature,fHePressure); 
 	GasMix->AddElement(ATHe3, 99.95*perCent);                                       //He3
 	// GasMix->AddElement(fNistManager->FindOrBuildElement(2), 99.95*perCent);         //He4

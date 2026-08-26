@@ -42,6 +42,7 @@ public: //declare all public functions
 	void MakeField();
 	void PlaceParts();
 	void DefineMaterials();
+	void DefineMaterialsLegacy();
 	void ReadParameters(const char*);
 	void SetIsOverlapVol(G4int isOv){ fIsOverlapVol = isOv; }
     void SetHePressure(G4double pressure){fHePressure=pressure;}
