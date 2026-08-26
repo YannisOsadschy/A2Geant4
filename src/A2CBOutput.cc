@@ -6,6 +6,8 @@
 
 #include "TParameter.h"
 
+#include <stdexcept>
+
 using namespace CLHEP;
 
 A2CBOutput::A2CBOutput(){
@@ -154,6 +156,8 @@ void A2CBOutput::SetBranches(){
     fTree->Branch("itpc",fitpc,"fitpc[fntpc]/I",basket);
     fTree->Branch("qtpc",fqtpc,"fqtpc[fntpc]/F",basket);
     fTree->Branch("ttpc",fttpc,"fttpc[fntpc]/F",basket);
+    fTree->Branch("tMeantpc",ftMeantpc,"ftMeantpc[fntpc]/D",basket);
+    fTree->Branch("tSigmatpc",ftSigmatpc,"ftSigmatpc[fntpc]/D",basket);
     fTree->Branch("tRawtpc",&ftRawtpc);
     //
   fTree->Branch("npiz",&fnpiz,"fnpiz/I",basket);
@@ -274,7 +278,30 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
 	    //hit->Print();
         fqtpc[ii]=hit->GetQdep()/eplus; //units???
         fttpc[ii]=hit->GetTime()/ms;
-        ftRawtpc.push_back(hit->GetHitTimesTPC());
+
+        //can be activated if wished
+
+        //ftRawtpc.push_back(hit->GetHitTimesTPC());
+        const std::vector<double>& hitTimes = hit->GetHitTimesTPC();
+        if (hitTimes.size()>0)
+        {
+            ftMeantpc[ii] = GetMean(hitTimes);
+            G4cout << ftMeantpc[ii] << G4endl;
+        }
+        else
+        {
+            throw std::runtime_error("A Hit TPC segment has no information about when that hit occured");
+        }
+        if (hitTimes.size()>1)
+        {
+            ftSigmatpc[ii] = GetStandardDeviation(hitTimes);
+        }
+        else
+        {
+            ftSigmatpc[ii] = 0.;
+        }
+
+
         //ftpcx[ii]=hit->GetPos().x()/cm;
         //ftpcy[ii]=hit->GetPos().y()/cm;
         //ftpcz[ii]=hit->GetPos().z()/cm;
@@ -318,4 +345,30 @@ void A2CBOutput::WriteGenInput(){
     fidpart[i]=fGenPartType[i];
   }
   if (fIsGiBUU) fweight = fPGA->GetFileGen()->GetWeight();
+}
+
+
+
+//private utility member functions used solely at moment for the TPC
+double A2CBOutput::GetMean(const std::vector<double>& list) const
+{
+    double sum = 0;
+    int n =list.size();
+    for (std::size_t i=0; i<n; ++i)
+    {
+        sum += list[i]; 
+    }
+    return sum/n;
+}
+
+double A2CBOutput::GetStandardDeviation(const std::vector<double>& list) const
+{
+    double sum = 0;
+    int n =list.size();
+    double mean = GetMean(list);
+    for (std::size_t i=0; i<n; ++i)
+    {
+        sum += (list[i]-mean)*(list[i]-mean); 
+    }
+    return std::sqrt(sum/(n-1));
 }

@@ -21,8 +21,8 @@ struct SegPosition
 
 //Global definitions
 Double_t vdrift; //cm/ms //is now set automatically
-Double_t qeslope = -5.01e-05; //from output of Calibrate.C   //old value: -0.000208
-Double_t qeintercept = -0.0127953; //from output of Calibrate.C	//old value: -0.89
+Double_t qeslope = -4.26975e-05; //from output of Calibrate.C   //old value: -0.000208
+Double_t qeintercept = 0.0013405; //from output of Calibrate.C	//old value: -0.89
 
 
 void GetAnodeLayoutFromDataFile(std::string fileName, std::vector<Double_t>& radii, std::vector<Int_t>& nSegments)
@@ -234,7 +234,7 @@ void GetDistanceAndTime3(Int_t ntpc, Float_t* ttpc, Float_t* qtpc, Int_t* itpc, 
 	ttpc2.clear();itpc2.clear(); qtpc2.clear();
 }
 
-void GetDistanceAndTime4(Int_t ntpc, Float_t* qtpc, Int_t* itpc, std::vector<std::vector<double>>& tRawtpc, Float_t charge,
+void GetDistanceAndTime4(Int_t ntpc, Float_t* qtpc, Int_t* itpc, Double_t* tMeantpc, Double_t* tSigmatpc, Float_t charge,
                          Double_t& delta_s, Double_t& delta_t, double& xStart, double& yStart, double& xEnd, double& yEnd, 
                          Bool_t& disregardLowChargePads, std::vector<Int_t>& disregardedPads, std::vector<Int_t>& selectedPads, 
                          Bool_t& useForAngular, std::size_t runIndex, double discardPadThreshhold = 0.003, double delta_tFac = 1.2 )
@@ -262,8 +262,9 @@ void GetDistanceAndTime4(Int_t ntpc, Float_t* qtpc, Int_t* itpc, std::vector<std
 		{
 			qtpc2.push_back(qtpc[i]);
 			itpc2.push_back(itpc[i]);
-            meanttpc2.push_back(GetMean(tRawtpc[i]));
-            sigmattpc2.push_back(GetStandardDeviation(tRawtpc[i]));
+            meanttpc2.push_back(tMeantpc[i]);
+            sigmattpc2.push_back(tSigmatpc[i]);
+            std::cout << tSigmatpc[i] << std::endl;
 			++ntpc2;
 		}
 		else
@@ -415,7 +416,9 @@ void Reconstruct(TString filename){
 	Int_t ntpc;							//true: number of electrons per event
 	Int_t *itpc = new Int_t[100];     	//measured: id of pad
 	Float_t *qtpc = new Float_t[100];  	//measured:something related to the charge 
-	Float_t *ttpc = new Float_t[100];	//measured: time of impact of electrons 
+	Float_t *ttpc = new Float_t[100];	//measured: time of impact of electrons
+    Double_t *tMeantpc = new Double_t[100];
+    Double_t *tSigmatpc = new Double_t[100];
 	Float_t *vertex = new Float_t[3];	//true:  position of hadron
 	Float_t *klab = new Float_t[3];		//true: energy of hadron  
 	Float_t dircos[100][3];				//true: cosine of momentum direction in x,y,z values for each created particle during creation 
@@ -425,6 +428,8 @@ void Reconstruct(TString filename){
 	h12->SetBranchAddress("itpc",itpc);
 	h12->SetBranchAddress("qtpc",qtpc);
 	h12->SetBranchAddress("ttpc",ttpc);
+    h12->SetBranchAddress("tMeantpc",tMeantpc);
+    h12->SetBranchAddress("tSigmatpc",tSigmatpc);
 	h12->SetBranchAddress("klab",klab);
 	h12->SetBranchAddress("vertex",vertex);
 	h12->SetBranchAddress("dircos",&dircos);
@@ -481,7 +486,7 @@ void Reconstruct(TString filename){
 
 
         Bool_t useForAngular = true;
-        std::vector<std::vector<double>>& raw = *tRawtpc;
+        //std::vector<std::vector<double>>& raw = *tRawtpc;
         xStart = 0;
         yStart = 0;
         xEnd = 0;
@@ -490,11 +495,11 @@ void Reconstruct(TString filename){
 		//GetDistanceAndTime3(ntpc, ttpc, qtpc, itpc, charge, delta_s, delta_t, 
         //disregardLowChargePads, disregardedPads, selectedPads, useForAngular);
         
-        GetDistanceAndTime4(ntpc, qtpc, itpc, raw, charge, delta_s, delta_t, 
+        GetDistanceAndTime4(ntpc, qtpc, itpc, tMeantpc, tSigmatpc, charge, delta_s, delta_t, 
                             xStart, yStart, xEnd, yEnd, disregardLowChargePads, 
                             disregardedPads, selectedPads, useForAngular, i+1);
         
-
+        //std::cout<<delta_s<< "  " << delta_t << std::endl;
 		if (useForAngular)
 		{
 			theta_rec=GetTheta(delta_s, delta_t);
@@ -519,291 +524,3 @@ void Reconstruct(TString filename){
     std::cout << std::endl;
 	Draw(out);
 }
-
-
-
-		//try not to use central pad for min if hits in both ring and one other section
-
-		/*
-		std::vector<Int_t> nSegments;
-	    std::vector<Double_t> radii;
-		//actual design used in the simulation
-		GetAnodeLayoutFromDataFile("data/TPC.dat",radii,nSegments);
-		if (minx==radii[0] && maxx!=radii[1]){
-			for (Int_t j=0; j<ntpc; j++){
-				if (itpc[j]==65){
-					minx=5;
-					mintime=ttpc[j];
-				}
-			}
-		}
-		*/
-
-/*
-
-    std::cout << std::endl << "[";
-    for (std::size_t i=1; i<65; ++i)
-    {
-        SegPosition seg = GetSegPosition(i);
-        double r =  (seg.rMin+seg.rMax)/2;
-        double phi = (seg.phiMin+seg.phiMax)/2;
-        double x,y;
-        TransformCircleToCartresian(r,phi,x,y);
-        std::cout << ",(" << x <<","<< y << ")";
-    }
-    std::cout << "]" << std::endl;
-
-    std::cout << std::endl << "[";
-    for (std::size_t i=1; i<65; ++i)
-    {
-        SegPosition seg = GetSegPosition(i);
-        double x,y;
-        TransformCircleToCartresian(seg.rMin,seg.phiMin,x,y);
-        std::cout << ",(" << x <<","<< y << ")";
-    }
-    std::cout << "]" << std::endl;
-
-    std::cout << std::endl << "[";
-    for (std::size_t i=1; i<65; ++i)
-    {
-        SegPosition seg = GetSegPosition(i);
-        double x,y;
-        TransformCircleToCartresian(seg.rMax,seg.phiMax,x,y);
-        std::cout << ",(" << x <<","<< y << ")";
-    }
-    std::cout << "]" << std::endl;
-*/
-
-
-/*
-void GetDistanceAndTime4(Int_t ntpc, Float_t* qtpc, Int_t* itpc, std::vector<std::vector<double>>& tRawtpc, Float_t charge, Double_t& delta_s, Double_t& delta_t, double& xStart, double& yStart, double& xEnd, double& yEnd, Bool_t& disregardLowChargePads, std::vector<Int_t>& disregardedPads, std::vector<Int_t>& selectedPads, Bool_t& useForAngular, std::size_t runIndex )
-{
-    disregardLowChargePads = true;
-    double minVal = std::numeric_limits<double>::max();
-    double maxVal = std::numeric_limits<double>::lowest();
-
-    for (const auto& row : tRawtpc) {
-        for (const double x : row) {
-            if (x < minVal) minVal = x;
-            if (x > maxVal) maxVal = x;
-        }
-    }
-    //filter
-	std::vector<Float_t> qtpc2;
-    std::vector<Int_t> itpc2;
-    std::vector<double> meanttpc2, sigmattpc2;
-	Int_t ntpc2 = 0;
-	for (std::size_t i=0; i<ntpc; ++i)
-	{
-		if (std::abs(qtpc[i])>0.003*std::abs(charge))
-		{
-			qtpc2.push_back(qtpc[i]);
-			itpc2.push_back(itpc[i]);
-            meanttpc2.push_back(GetMean(tRawtpc[i]));
-            sigmattpc2.push_back(GetStandardDeviation(tRawtpc[i]));
-			++ntpc2;
-		}
-		else
-		{
-			disregardedPads.push_back(itpc[i]);
-		}
-    }
-    std::vector<std::size_t> index = GetArgSort(meanttpc2);
-    std::vector<Float_t> qtpc3;
-    std::vector<Int_t> itpc3;
-    std::vector<double> meanttpc3, sigmattpc3;
-	Int_t ntpc3 = ntpc2;
-    for (std::size_t i=0; i<ntpc2; ++i)
-    {
-        itpc3.push_back(itpc2[index[i]]);
-        qtpc3.push_back(qtpc2[index[i]]);
-        meanttpc3.push_back(meanttpc2[index[i]]);
-        sigmattpc3.push_back(sigmattpc2[index[i]]);
-    }
-    if (ntpc2 < 2)
-    {
-        useForAngular = false;
-        return;
-    }
-    bool smallTrack = false;
-    double smallTrackFac = 1.;
-    if (meanttpc3[0]+sigmattpc3[0]>meanttpc3[ntpc3-1]-sigmattpc3[ntpc3-1])
-	{
-		if (meanttpc3[0]+smallTrackFac*sigmattpc3[0]<meanttpc3[ntpc3-1] && meanttpc3[0]<meanttpc3[ntpc3-1]-smallTrackFac*sigmattpc3[ntpc3-1]) 
-        {
-            smallTrack = true;
-            std::cout << runIndex << ",";
-        }
-        else
-        {
-            useForAngular = false;
-        }
-	}
-    if (useForAngular)
-    {
-        delta_t =  meanttpc3[ntpc3-1] + sigmattpc3[ntpc3-1] - (meanttpc3[0] - sigmattpc3[0]);
-
-        std::vector<Int_t> itpcStart;
-        Int_t ntpcStart = 0;
-        std::vector<Int_t> itpcEnd;
-        Int_t ntpcEnd = 0;
-        
-        for (std::size_t i=0; i<ntpc3; ++i)
-        {
-            bool dominantPeakBool=2*sigmattpc3[i]>1*(maxVal-minVal);
-            //bool dominantPeakBool=2*sigmattpc3[i]>0.45*(maxVal-minVal);
-            if (meanttpc3[i]<meanttpc3[0]+sigmattpc3[0] || dominantPeakBool)
-            //if (meanttpc3[i]-sigmattpc3[i]<meanttpc3[0]+sigmattpc3[0] || dominantPeakBool)
-            //if (meanttpc3[i]-0.3*sigmattpc3[i]<meanttpc3[0]+sigmattpc3[0] || dominantPeakBool)
-            {
-                itpcStart.push_back(itpc3[i]);
-                ++ntpcStart;
-            }
-            //if (meanttpc3[i]>meanttpc3[ntpc3-1]-sigmattpc3[ntpc3-1] || dominantPeakBool)
-            if (meanttpc3[i]+sigmattpc3[i]>meanttpc3[ntpc3-1]-sigmattpc3[ntpc3-1] || dominantPeakBool)
-            {
-                itpcEnd.push_back(itpc3[i]);
-                ++ntpcEnd;
-            }
-        }
-        double smallTrackWeight = 2.;
-        for (std::size_t i=0; i<ntpcStart; ++i)
-        {
-            SegPosition seg = GetSegPosition(itpcStart[i]);
-            double r =  (seg.rMin+seg.rMax)/2;
-            double phi = (seg.phiMin+seg.phiMax)/2;
-            double x,y;
-            TransformCircleToCartresian(r,phi,x,y);
-            if (smallTrack)
-            {
-                if (i==0)
-                {
-                    xStart += (smallTrackWeight)*(x/ntpcStart);
-                    yStart += (smallTrackWeight)*(y/ntpcStart);
-                }
-                else
-                {
-                    xStart += ((ntpcStart-smallTrackWeight)/(ntpcStart-1))*(x/ntpcStart);
-                    yStart += ((ntpcStart-smallTrackWeight)/(ntpcStart-1))*(y/ntpcStart);
-                }
-            }
-            else
-            {
-                xEnd += x/ntpcStart;
-                yEnd += y/ntpcStart;
-            }
-        }
-        for (std::size_t i=0; i<ntpcEnd; ++i)
-        {
-            SegPosition seg = GetSegPosition(itpcEnd[i]);
-            double r =  (seg.rMin+seg.rMax)/2;
-            double phi = (seg.phiMin+seg.phiMax)/2;
-            double x,y;
-            TransformCircleToCartresian(r,phi,x,y);
-            if (smallTrack)
-            {
-                if (i==ntpcEnd-1)
-                {
-                    xEnd += (smallTrackWeight)*(x/ntpcEnd);
-                    yEnd += (smallTrackWeight)*(y/ntpcEnd);
-                }
-                else
-                {
-                    xEnd += ((ntpcEnd-smallTrackWeight)/(ntpcEnd-1))*(x/ntpcEnd);
-                    yEnd += ((ntpcEnd-smallTrackWeight)/(ntpcEnd-1))*(y/ntpcEnd);
-                }
-                
-            }
-            else
-            {
-                xEnd += x/ntpcEnd;
-                yEnd += y/ntpcEnd;
-            }
-        }
-        delta_t = 1.24*delta_t;
-        delta_s = std::sqrt((xStart-xEnd)*(xStart-xEnd)+(yStart-yEnd)*(yStart-yEnd));
-    }
-}
-*/
-
-
-////////////////////////////////////////////////////////////////////
-
-/*
-GetDistanceAndTime5(ntpc, qtpc, itpc, raw, charge, delta_s, delta_t, 
-                            xStart, yStart, xEnd, yEnd, disregardLowChargePads, 
-                            disregardedPads, selectedPads, useForAngular, i+1);
-*/
-
-/*
-void GetDistanceAndTime5(Int_t ntpc, Float_t* qtpc, Int_t* itpc, std::vector<std::vector<double>>& tRawtpc, Float_t charge,
-                         Double_t& delta_s, Double_t& delta_t, double& xStart, double& yStart, double& xEnd, double& yEnd, 
-                         Bool_t& disregardLowChargePads, std::vector<Int_t>& disregardedPads, std::vector<Int_t>& selectedPads, 
-                         Bool_t& useForAngular, std::size_t runIndex, double discardPadThreshhold = 0.003, double delta_tFac = 1.2 )
-{
-    disregardLowChargePads = true;
-    //filter
-	std::vector<Float_t> qtpc2;
-    std::vector<Int_t> itpc2;
-    std::vector<double> meanttpc2, sigmattpc2;
-	Int_t ntpc2 = 0;
-	for (std::size_t i=0; i<ntpc; ++i)
-	{
-		if (std::abs(qtpc[i])>discardPadThreshhold*std::abs(charge))
-		{
-			qtpc2.push_back(qtpc[i]);
-			itpc2.push_back(itpc[i]);
-            meanttpc2.push_back(GetMean(tRawtpc[i]));
-            sigmattpc2.push_back(GetStandardDeviation(tRawtpc[i]));
-			++ntpc2;
-		}
-		else
-		{
-			disregardedPads.push_back(itpc[i]);
-		}
-    }
-    std::vector<std::size_t> index = GetArgSort(meanttpc2);
-    std::vector<Float_t> qtpc3;
-    std::vector<Int_t> itpc3;
-    std::vector<double> meanttpc3, sigmattpc3;
-	Int_t ntpc3 = ntpc2;
-    for (std::size_t i=0; i<ntpc2; ++i)
-    {
-        itpc3.push_back(itpc2[index[i]]);
-        qtpc3.push_back(qtpc2[index[i]]);
-        meanttpc3.push_back(meanttpc2[index[i]]);
-        sigmattpc3.push_back(sigmattpc2[index[i]]);
-    }
-    if (ntpc2 < 2)
-    {
-        useForAngular = false;
-        return;
-    }
-    bool smallTrack = false;
-    double smallTrackFac = 1.;
-    if (meanttpc3[0]+sigmattpc3[0]>meanttpc3[ntpc3-1]-sigmattpc3[ntpc3-1])
-	{
-        useForAngular = false;
-	}
-    if (useForAngular)
-    {
-        delta_t =  meanttpc3[ntpc3-1] + sigmattpc3[ntpc3-1] - (meanttpc3[0] - sigmattpc3[0]);
-        
-        SegPosition seg = GetSegPosition(itpc3[0]);
-        double rStart =  (seg.rMin+seg.rMax)/2;
-        double phiStart = (seg.phiMin+seg.phiMax)/2;
-        double xStart, yStart;
-        TransformCircleToCartresian(rStart,phiStart,xStart,yStart);
-
-        seg = GetSegPosition(itpc3[ntpc3-1]);
-        double rEnd =  (seg.rMin+seg.rMax)/2;
-        double phiEnd = (seg.phiMin+seg.phiMax)/2;
-        double xEnd, yEnd;
-        TransformCircleToCartresian(rEnd,phiStart,xEnd,yEnd);
-
-        delta_t = 1.2*delta_t;
-        delta_s = std::sqrt((xStart-xEnd)*(xStart-xEnd)+(yStart-yEnd)*(yStart-yEnd));
-    }
-}
-*/
-

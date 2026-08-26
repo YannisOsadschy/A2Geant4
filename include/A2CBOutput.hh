@@ -99,6 +99,8 @@ protected:
   Int_t fitpc[MAXSIZE_TPC]; //hit section index
   Float_t fqtpc[MAXSIZE_TPC]; //hit energy deposit
   Float_t fttpc[MAXSIZE_TPC]; //hit time
+  Double_t ftMeantpc[MAXSIZE_TPC];
+  Double_t ftSigmatpc[MAXSIZE_TPC];
   std::vector<std::vector<double>> ftRawtpc; //hit times
 
   
@@ -135,6 +137,10 @@ public:
   void WriteTree(){fTree->Write();}
   void WriteHit(G4HCofThisEvent* );
   void WriteGenInput();
+
+private:
+  double GetMean(const std::vector<double>&) const;
+  double GetStandardDeviation(const std::vector<double>&) const;
 };
 
 
