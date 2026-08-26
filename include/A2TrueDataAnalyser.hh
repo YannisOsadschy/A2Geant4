@@ -21,6 +21,8 @@ class A2TrueDataAnalyser
         void MakePrimaryTrackInfoHists(std::size_t chosenLayer = allLayers) const;
         // default: all layers are selected, 0:only primaries, 1:only secondaries, ...
         void StepLengthPlots(std::size_t chosenLayer = allLayers) const;
+        // default: all layers are selected, 0:only primaries, 1:only secondaries, ...
+        void StoppingPower(std::size_t chosenLayer = allLayers) const;
     
     private:
         static constexpr std::size_t allLayers = std::numeric_limits<std::size_t>::max();      

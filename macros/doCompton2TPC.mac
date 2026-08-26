@@ -24,8 +24,8 @@
 /A2/generator/SetTargetThick 20. cm
 /A2/generator/SetTargetRadius 10. mm
 
-/A2/stepping/sampleElectrons true
-/A2/run/collectTrueData false
+/A2/stepping/sampleElectrons false
+/A2/run/collectTrueData true
 
 #####Output
 #Open the output file for writing
@@ -41,5 +41,6 @@
 #/gun/particle pi+
 #/gun/particle proton
 #/gun/particle neutron
-/gun/particle He3
-/run/beamOn 1
+#/gun/particle He3
+/gun/particle alpha
+/run/beamOn 15000

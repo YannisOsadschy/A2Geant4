@@ -412,4 +412,81 @@ void A2TrueDataAnalyser::StepLengthPlots(std::size_t chosenLayer) const
     file.Close();
 }
 
-        
+
+
+
+
+
+
+
+
+void A2TrueDataAnalyser::StoppingPower(std::size_t chosenLayer) const
+{   
+    int PDGE;
+    double trackEkin;
+    double trackLength;
+    std::vector<double> stepLength;
+    std::vector<double> accumulatedStepLength;
+    std::vector<double> preKinEnergy;
+    std::vector<double> postKinEnergy;
+
+    TFile file("tracks.root", "Recreate");
+    TTree tree("tree", "energy comparisson");
+    tree.Branch("PDGE", &PDGE);
+    tree.Branch("Ekin", &trackEkin);
+    tree.Branch("trackLength", &trackLength);
+    tree.Branch("stepLength", &stepLength);
+    tree.Branch("accumulatedStepLength", &accumulatedStepLength);
+    tree.Branch("preKinEnergy", &preKinEnergy);
+    tree.Branch("postKinEnergy", &postKinEnergy);
+
+    
+    for (auto& event : fRunData.events)
+    {   
+        std::unordered_map<int, std::size_t> trackLookUpMap = MakeTrackLookUpMap(event);
+        std::unordered_map<int, std::vector<int>> childTrackMap = MakeChildTrackMap(event);
+        const std::vector<TrackData>& tracks = event.tracks;
+
+        auto fillTrackInfo = [ &trackLookUpMap, &childTrackMap, &tracks, 
+                               &chosenLayer, &PDGE, &stepLength, &accumulatedStepLength, &preKinEnergy, &postKinEnergy, &trackEkin, &trackLength, &tree, this ]
+                                            (int trackID, std::size_t depth)
+        {
+            
+            if (chosenLayer==allLayers || depth==chosenLayer)
+            //if ((chosenLayer==allLayers || depth==chosenLayer) && depth != 0) //temporary no primaries
+            {   
+                const TrackData& track = tracks[trackLookUpMap.at(trackID)];
+                PDGE = track.PDGE;
+                trackEkin = track.kinEnergy;
+                trackLength = track.trackLength;
+                double sum = 0;
+                for (auto& step : track.steps)
+                {
+                    stepLength.push_back(step.stepLength);
+                    accumulatedStepLength.push_back(sum + 0.5*step.stepLength);
+                    sum += step.stepLength;
+                    preKinEnergy.push_back(step.preKinEnergy);
+                    postKinEnergy.push_back(step.postKinEnergy);
+                }
+                tree.Fill();
+                stepLength.clear();
+                preKinEnergy.clear();
+                postKinEnergy.clear();
+                accumulatedStepLength.clear();
+            }
+        }; 
+
+        for (const auto& track : event.tracks)
+        {
+            if (track.parentTrackID == 0)
+            {   
+                ParseTrackTree( track.trackID,
+                                childTrackMap,
+                                fillTrackInfo,
+                                chosenLayer );  //chosenLayer passed as maxDepth, to stop recursion after reaching the chosen layer
+            }
+        }
+    }
+    tree.Write();
+    file.Close();
+}  
