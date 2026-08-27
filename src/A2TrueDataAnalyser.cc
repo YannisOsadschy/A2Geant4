@@ -54,7 +54,7 @@ void A2TrueDataAnalyser::VisualizeTree(bool all) const
     out.open("DataTreeVisualisation.txt");
     for (std::size_t i = 0; i<fRunData.events.size(); ++i)
     {   
-        if (!all && i>0)
+        if (!all && i>10)
         {
             break;
         }

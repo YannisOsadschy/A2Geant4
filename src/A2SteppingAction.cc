@@ -124,7 +124,7 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
     
     //   G4double stepl = 0.;
 
-
+    /*
     //force electrons to drift in Time Projection chamber
     if(track->GetDefinition()->GetParticleName()==G4String("e-")){ //only applies to electrons
         if(fpSteppingManager->GetfCurrentVolume()->GetName()=="HELIUM" && track->GetTrackStatus()!=fStopAndKill){ //check for active electron inside active volume 
@@ -142,8 +142,10 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
             }
         }	
     }
-    //stop tracking after the trigger time
     else if(aStep->GetPreStepPoint()->GetGlobalTime()>2*ms)track->SetTrackStatus(fStopAndKill);
+    */
+    if(aStep->GetPreStepPoint()->GetGlobalTime()>2*ms)track->SetTrackStatus(fStopAndKill);
+    //stop tracking after the trigger time
     //   if(track->GetDefinition()->GetParticleName()==G4String("pi0"))
     //     {G4cout<<"Got a pi0 "<<aStep->GetPreStepPoint()->GetGlobalTime()/ns<<" "<<track->GetKineticEnergy()/MeV<<" "<< fpSteppingManager->GetfCurrentVolume()->GetName()<<G4endl;track->SetTrackStatus(fStopAndKill);}
     //  if(track->GetDefinition()->GetParticleName()==G4String("pi+"))
@@ -206,7 +208,7 @@ void A2SteppingAction::UserSteppingAction(const G4Step* aStep)
     {
         G4Region* region = aStep->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume()->GetRegion();
         G4String particleName = aStep->GetTrack()->GetParticleDefinition()->GetParticleName();
-        if (region->GetName()=="ActiveGas" && (particleName=="alpha" || particleName=="He3"))
+        if (region->GetName()=="ActiveGas" && (particleName=="alpha" || particleName=="He3" || particleName=="deuteron" ))
         {
             if (!fDrifter)
             {

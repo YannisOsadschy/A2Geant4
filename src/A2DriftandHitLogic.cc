@@ -123,6 +123,7 @@ void A2DriftandHitLogic::ProcessHit(G4ThreeVector position, G4double ekin_keV, G
     anInfo->SetTrackID(trackID);
     anInfo->SetPartID(partID);
     anInfo->SetHasDriftParametersTPC(true);
+    anInfo->SetIsSampledTPCDriftElectron(true);
     //TimeDebugger::A2SDIfTrue += std::chrono::duration<double>(tB-tA).count();
     //TPC driftParameters are currently passed as the following: A2DriftandHitLogic->A2UserTrackInformation->A2Hit->A2CBOutput for every track. 
     //To save memory it would better to move the determination of the Drift parameters from A2DriftandHitLogic to the A2TPC 
@@ -231,7 +232,7 @@ void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
     else if (name=="D2GasPure")
     { //deuterium
         fWorkFunction = 36.5e-6 ;
-		inputString = "data/drift_cali_D2.tsv";
+		inputString = "data/drift_cali_d.tsv";
 	}
 
 

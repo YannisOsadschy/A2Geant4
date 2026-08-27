@@ -678,10 +678,12 @@ void A2TPC::MakeField(){
     fRegionActiveGas->SetUserLimits(tpcLimits);
 
 	/***** attach model of electron drift to active gas region *****/
-	A2DriftModel *driftPhys = new A2DriftModel("Electron Drift Model",fRegionActiveGas); //create model
-	G4FastSimulationManager* driftMan = new G4FastSimulationManager(fRegionActiveGas); //call fast simulation manager
-	driftMan->AddFastSimulationModel(driftPhys); //add model as a fast simulation
-	driftMan->ActivateFastSimulationModel("driftPhys"); //activate model
+    /*
+    A2DriftModel *driftPhys = new A2DriftModel("Electron Drift Model",fRegionActiveGas); //create model
+    G4FastSimulationManager* driftMan = new G4FastSimulationManager(fRegionActiveGas); //call fast simulation manager
+    driftMan->AddFastSimulationModel(driftPhys); //add model as a fast simulation
+    driftMan->ActivateFastSimulationModel("driftPhys"); //activate model
+    */
 }
 
 

@@ -258,7 +258,7 @@ void GetDistanceAndTime4(Int_t ntpc, Float_t* qtpc, Int_t* itpc, Double_t* tMean
 	Int_t ntpc2 = 0;
 	for (std::size_t i=0; i<ntpc; ++i)
 	{
-		if (std::abs(qtpc[i])>discardPadThreshhold*std::abs(charge))
+		if (std::abs(qtpc[i])>discardPadThreshhold*std::abs(charge) && itpc[i]!=65)
 		{
 			qtpc2.push_back(qtpc[i]);
 			itpc2.push_back(itpc[i]);

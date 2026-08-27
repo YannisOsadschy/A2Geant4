@@ -286,7 +286,6 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
         if (hitTimes.size()>0)
         {
             ftMeantpc[ii] = GetMean(hitTimes);
-            G4cout << ftMeantpc[ii] << G4endl;
         }
         else
         {

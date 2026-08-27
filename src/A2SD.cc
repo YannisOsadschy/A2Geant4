@@ -80,10 +80,21 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
   else id = volume->GetCopyNo();
   //seperate ADC gates for TAPS
   if(mothervolume->GetName().contains("COVR")){if (aStep->GetPreStepPoint()->GetGlobalTime()>2000*ns) return false; }
-  //long ADC gate for TPC to record electron drift
-  if(volume->GetName().contains("Anode")){ if (aStep->GetPreStepPoint()->GetGlobalTime()>2*ms) return false; }
-  else if (aStep->GetPreStepPoint()->GetGlobalTime()>600*ns)return false;
+  
 
+
+  //long ADC gate for TPC to record electron drift
+  G4Track* track = aStep->GetTrack();
+  A2UserTrackInformation* track_info = (A2UserTrackInformation*) track->GetUserInformation();
+  if(volume->GetName().contains("Anode"))
+  { 
+    // Only manually sampled TPC drift electrons may generate anode hits
+    if (!track_info->GetIsSampledTPCDriftElectron()) return false;
+    if (aStep->GetPreStepPoint()->GetGlobalTime()>2*ms) return false; 
+  }
+  
+
+  else if (aStep->GetPreStepPoint()->GetGlobalTime()>600*ns)return false;
   if(volume->GetName().contains("PhysiHe")) return false;
   //add analagous declaration for TPC? Or create PhysiHe for TPC?
 
@@ -98,12 +109,10 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
   //}
 
   // get track informationsdStuffTime
-  G4Track* track = aStep->GetTrack();
   //aStep->GetTrack() can be a nullptr, in case of manually sampled TPC electrons, which do not have real track objects, to save overhead,
   //but they have fake step objects with primary track objects (as nullptr) to work with the normal sd setup.
  
   
-  A2UserTrackInformation* track_info = (A2UserTrackInformation*) track->GetUserInformation();
   //use this to get charge of particle hitting detector: for TPC anode
   G4double qdep = track->GetDynamicParticle()->GetCharge();
   //auto tA = std::chrono::high_resolution_clock::now();

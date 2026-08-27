@@ -40,10 +40,15 @@ public:
     //drift coefficients for TPC
     private:
     G4bool fHasDriftParametersTPC=false;
+    G4bool fIsSampledTPCDriftElectron=false;
     DriftParametersTPC fDriftParametersTPC;
     public:
     void SetHasDriftParametersTPC(bool hasDriftParametersTPC){fHasDriftParametersTPC=hasDriftParametersTPC;}
     G4bool GetHasDriftParametersTPC(){return fHasDriftParametersTPC;}
+
+    void SetIsSampledTPCDriftElectron(bool isSampledTPCDriftElectron){fIsSampledTPCDriftElectron=isSampledTPCDriftElectron;}
+    G4bool GetIsSampledTPCDriftElectron(){return fIsSampledTPCDriftElectron;}
+
     void SetDriftParametersTPC(double selectedPressure,
                             double selectedEfield,
                             double vDrift,
