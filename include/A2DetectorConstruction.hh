@@ -73,7 +73,7 @@ class A2DetectorConstruction : public G4VUserDetectorConstruction
   void SetTPCefield(G4double Efield){fTPCEfield=Efield;}
   void SetTPCtargetGas(G4String targetGas)
   {
-    if (targetGas=="He3ActiveGas" || targetGas=="He4ActiveGas" || targetGas=="D2GasPure") fTPCTargetGas=targetGas;
+    if (targetGas=="He3ActiveGas" || targetGas=="He4ActiveGas" || targetGas=="D2GasPure" || targetGas=="He3GasPure") fTPCTargetGas=targetGas;
     else 
     {
       G4cout << targetGas << " is not a supported active target material" << G4endl;

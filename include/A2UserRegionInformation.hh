@@ -21,6 +21,12 @@ class A2UserRegionInformation : public G4VUserRegionInformation
         double GetDetectionSurvivalProbability() const{return fDetectionSurvivalProbability;}
         double GetAnodeCathodeDistance() const{return fAnodeCathodeDistance;}
 
+        // z coordinates of the gas-facing electrode surfaces
+        void SetAnodeZ(double anodeZ){fAnodeZ = anodeZ;}
+        double GetAnodeZ() const{return fAnodeZ;}
+        void SetCathodeZ(double cathodeZ){fCathodeZ = cathodeZ;}
+        double GetCathodeZ() const{return fCathodeZ;}
+
         void Print() const override {}
 
     private:
@@ -30,6 +36,10 @@ class A2UserRegionInformation : public G4VUserRegionInformation
         double fLambdaAttachementFactor;
         double fDetectionSurvivalProbability;
         double fAnodeCathodeDistance;
+
+        // Active drift-volume boundaries
+        double fAnodeZ;
+        double fCathodeZ;
 
 
 };

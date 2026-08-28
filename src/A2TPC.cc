@@ -659,9 +659,16 @@ void A2TPC::MakeField(){
 	regionInfo->SetSimulateElectronLoss(fSimulateElectronLoss);
 	regionInfo->SetLambdaAttachementFactor(fLambdaAttachementFactor);
 	regionInfo->SetDetectionSurvivalProbability(fDetectionSurvivalProbability);
-	regionInfo->SetAnodeCathodeDistance(fLength-(fCathodeDistance+fAnodeDistance));
 
-
+    const G4double anodeCenterZ =-fLength/2. + fAnodeDistance;
+    const G4double cathodeCenterZ =fLength/2. - fCathodeDistance;
+    // Gas-facing surfaces
+    const G4double anodeZ =anodeCenterZ + fGThickness/2.;
+    const G4double cathodeZ =cathodeCenterZ - fAlThickness/2.;
+    regionInfo->SetAnodeZ(anodeZ);
+    regionInfo->SetCathodeZ(cathodeZ);
+    regionInfo->SetAnodeCathodeDistance(cathodeZ - anodeZ);
+    
     fRegionActiveGas->SetUserInformation(regionInfo);
 
 	/***** set specific production cuts for active gas region *****/
