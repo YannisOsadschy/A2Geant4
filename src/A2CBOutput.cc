@@ -280,7 +280,6 @@ void A2CBOutput::WriteHit(G4HCofThisEvent* HitsColl){
         fttpc[ii]=hit->GetTime()/ms;
 
         //can be activated if wished
-
         //ftRawtpc.push_back(hit->GetHitTimesTPC());
         const std::vector<double>& hitTimes = hit->GetHitTimesTPC();
         if (hitTimes.size()>0)

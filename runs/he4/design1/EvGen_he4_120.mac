@@ -1,9 +1,0 @@
-/run/initialize
-/A2/generator/NToBeTracked 2
-/A2/generator/Track 1
-/A2/generator/Track 2
-/A2/generator/Mode 2
-/A2/generator/InputFile runs/he4/compton_he4_120_in.root
-/A2/stepping/sampleElectrons true
-/A2/run/collectTrueData false
-/A2/event/setOutputFile runs/he4/design1/Geant-Output_he4_120_.root

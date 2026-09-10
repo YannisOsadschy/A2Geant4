@@ -18,16 +18,24 @@ TPC-Dim: 281.0 92.0 8 25.0 200.0 25.0 17.0 6.0
 ## Radii of the Anode segments in mm
 ##new1:
 ##Anode-Radii: 0. 3. 5.5 8. 10.5 15. 50.
-##new2
-Anode-Radii: 0. 4. 7. 11. 15. 20. 50.
+##new2:
+##Anode-Radii: 0. 4. 7. 11. 15. 20. 50.
+##new3:
+Anode-Radii: 0. 2. 5. 8. 12. 16. 20. 50.
+##new4: 
+##Anode-Radii: 0. 2. 5. 8. 12. 16. 20. 50.
 ##alicia:
 ##Anode-Radii: 0.0 5.0 7.0 10.0 13.0 25.0 50.0
 ##
 ## Number of Anode Segments for a given ring 
-##new1
+##new1:
 ##Anode-Segments: 8 12 14 15 14 1
-##new2
-Anode-Segments: 8 12 14 15 14 1
+##new2:
+##Anode-Segments: 8 12 14 15 14 1
+##new3:
+Anode-Segments: 1 8 12 14 14 14 1
+##new4:
+##Anode-Segments: 1 6 11 13 15 17 1
 ##alicia:
 ##Anode-Segments: 1 1 16 16 16 16
 ##
@@ -52,3 +60,9 @@ Grid-Dim: 0.05 0.5
 ## Run Mode 0=no, 1=yes
 ## Check overlaps
 Run-Mode: 0 1
+
+
+
+
+##Anode-Segments: 1 11 15 17 19 1
+##Anode-Radii: 0. 2. 5. 8. 12. 16. 50.

@@ -292,14 +292,13 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
     tree.Branch("trackLength", &trackLength);
     tree.Branch("iGlobalTime", &iGlobalTime);
     tree.Branch("fGlobalTime", &fGlobalTime);
-    /*
+    
     tree.Branch("iXSteps", &iXSteps);
     tree.Branch("iYSteps", &iYSteps);
     tree.Branch("iZSteps", &iZSteps);
     tree.Branch("fXSteps", &fXSteps);
     tree.Branch("fYSteps", &fYSteps);
     tree.Branch("fZSteps", &fZSteps);
-    */
 
     
     for (auto& event : fRunData.events)
@@ -332,7 +331,7 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
                 trackLength = track.trackLength;
                 iGlobalTime = track.iGlobalTime;
                 fGlobalTime = track.fGlobalTime;
-                /*
+                
                 for (auto& step : track.steps)
                 {
                     iXSteps.push_back(step.iX);
@@ -342,7 +341,7 @@ void A2TrueDataAnalyser::MakePrimaryTrackInfoHists(std::size_t chosenLayer) cons
                     fYSteps.push_back(step.fY);
                     fZSteps.push_back(step.fZ);
                 }
-                */
+                
                 tree.Fill();
                 
                 iXSteps.clear();
@@ -434,7 +433,7 @@ void A2TrueDataAnalyser::StoppingPower(std::size_t chosenLayer) const
     std::vector<double> preKinEnergy;
     std::vector<double> postKinEnergy;
 
-    TFile file("tracks.root", "Recreate");
+    TFile file("steps.root", "Recreate");
     TTree tree("tree", "energy comparisson");
     tree.Branch("PDGE", &PDGE);
     tree.Branch("Ekin", &trackEkin);

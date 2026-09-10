@@ -59,7 +59,7 @@ class A2DetectorMessenger: public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fTPCefieldCmd; 
     G4UIcmdWithABool* fTPCSimulateElectronLossCmd;
     G4UIcmdWithADouble* fTPCDetectorEfficiencyCmd;
-    G4UIcmdWithADouble* fTPCLambdaAttachementFactorCmd;
+    G4UIcmdWithADoubleAndUnit* fTPCLambdaAttachementCmd;
 
     G4UIcmdWithAString* fTPCMaterialCmd;
 

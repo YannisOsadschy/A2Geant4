@@ -65,7 +65,7 @@ class A2DriftandHitLogic
         G4double fWorkFunction;
 
         G4bool fSimulateElectronLoss;
-        G4double fLambdaAttachementFactor;
+        G4double fLambdaAttachement;
         G4double fDetectionSurvivalProbability;
         G4double fAnodeCathodeDistance;
 };

@@ -192,8 +192,7 @@ void A2DriftandHitLogic::SampleEdep(const G4Step* aStep)
 G4bool A2DriftandHitLogic::DoesElectronSurvive(G4double zTrue) const
 {
 	G4double zDistance=zTrue+fAnodeCathodeDistance/2;
-	G4double lambdaAttachement = fAnodeCathodeDistance*fLambdaAttachementFactor ; //free path for electron attachement
-	G4double fAttachmentSurvivalProbability = exp(-zDistance/lambdaAttachement);
+	G4double fAttachmentSurvivalProbability = exp(-zDistance/fLambdaAttachement);
 	G4double uniformX1 = RandFlat::shoot();  //losses along the path
 	G4double uniformX2 = RandFlat::shoot();  //detector losses
 	if (fAttachmentSurvivalProbability > uniformX1 && fDetectionSurvivalProbability > uniformX2)
@@ -215,7 +214,7 @@ void A2DriftandHitLogic::SetConstants(G4Region *gasRegion){
     fEfield = regionInfo->GetEfield()/(volt/mm);
     fTemperature = regionInfo->GetTemperature();
     fSimulateElectronLoss = regionInfo->GetSimulateElectronLoss();
-    fLambdaAttachementFactor = regionInfo->GetLambdaAttachementFactor();
+    fLambdaAttachement = regionInfo->GetLambdaAttachement();
     fDetectionSurvivalProbability= regionInfo->GetDetectionSurvivalProbability();
     fAnodeCathodeDistance = regionInfo->GetAnodeCathodeDistance();
     std::string inputString;

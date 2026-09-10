@@ -86,7 +86,7 @@ A2DetectorConstruction::A2DetectorConstruction(G4String detSet)
   fTPCTargetGas = "He3ActiveGas";
   fTPCSimulateElectronLoss = false;
   fTPCDetectionSurvivalProbability = 1.;
-  fTPCLambdaAttachementFactor = 10000000.; //just a very large number
+  fTPCLambdaAttachement = 1.e9*m; //just a very large number
 
   //has to be done here in case use new material for target
   DefineMaterials();
@@ -243,7 +243,7 @@ G4VPhysicalVolume* A2DetectorConstruction::Construct()
         tpcTarget->SetHePressure(fTPCPressure);
         tpcTarget->SetEfield(fTPCEfield);
         tpcTarget->SetSimulateElectronLoss(fTPCSimulateElectronLoss);
-	      tpcTarget->SetLambdaAttachementFactor(fTPCLambdaAttachementFactor);
+	      tpcTarget->SetLambdaAttachement(fTPCLambdaAttachement);
 	      tpcTarget->SetDetectionSurvivalProbability(fTPCDetectionSurvivalProbability);
         fTarget = static_cast<A2Target*>(tpcTarget);
     }

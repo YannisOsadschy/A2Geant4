@@ -50,7 +50,7 @@ public: //declare all public functions
     void SetEfield(G4double Efield){fEfield=Efield;}
     void SetTemperature(G4double temperature){fTemperature=temperature;}
 	void SetSimulateElectronLoss(G4bool simulateElectronLoss){fSimulateElectronLoss=simulateElectronLoss;}
-	void SetLambdaAttachementFactor(G4double lambdaAttachementFactor){fLambdaAttachementFactor=lambdaAttachementFactor;}
+	void SetLambdaAttachement(G4double lambdaAttachement){fLambdaAttachement=lambdaAttachement;}
 	void SetDetectionSurvivalProbability(G4double detectionSurvivalProbability){fDetectionSurvivalProbability=detectionSurvivalProbability;}
 
 private: //private declarations
@@ -146,7 +146,7 @@ private: //private declarations
     G4double fTemperature; //K
 
 	G4bool fSimulateElectronLoss = false;
-    G4double fLambdaAttachementFactor;
+    G4double fLambdaAttachement;
     G4double fDetectionSurvivalProbability;
 
 	//for placing anode

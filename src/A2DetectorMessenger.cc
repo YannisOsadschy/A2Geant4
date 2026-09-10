@@ -215,11 +215,11 @@ A2DetectorMessenger::A2DetectorMessenger(
   fTPCDetectorEfficiencyCmd->AvailableForStates(cmdState,G4State_Idle);
 
 
-  fTPCLambdaAttachementFactorCmd = new G4UIcmdWithADouble("/A2/det/setTPCattachementMeanFreePath",this);
-  fTPCLambdaAttachementFactorCmd->SetGuidance("Set Mean free Path of attachement processes in the TPC in units of the distance between the cathode and anode");
-  fTPCLambdaAttachementFactorCmd->SetParameterName("meanFreePath",true);
-  fTPCLambdaAttachementFactorCmd->SetDefaultValue(1.e6);
-  fTPCLambdaAttachementFactorCmd->AvailableForStates(cmdState,G4State_Idle);
+  fTPCLambdaAttachementCmd = new G4UIcmdWithADoubleAndUnit("/A2/det/setTPCattachementMeanFreePath",this);
+  fTPCLambdaAttachementCmd->SetGuidance("Set Mean free Path of attachement processes in the TPC");
+  fTPCLambdaAttachementCmd->SetParameterName("meanFreePath",true);
+  fTPCLambdaAttachementCmd->SetUnitCategory("Length");
+  fTPCLambdaAttachementCmd->AvailableForStates(cmdState,G4State_Idle);
 
 
 
@@ -258,7 +258,7 @@ A2DetectorMessenger::~A2DetectorMessenger()
   delete fTPCpressureCmd;
   delete fTPCefieldCmd;
   delete fTPCMaterialCmd;
-  delete fTPCLambdaAttachementFactorCmd;
+  delete fTPCLambdaAttachementCmd;
   delete fTPCDetectorEfficiencyCmd;
   delete fTPCSimulateElectronLossCmd;
  }
@@ -362,8 +362,8 @@ void A2DetectorMessenger::SetNewValue(G4UIcommand* command,G4String newValue)
   if( command == fTPCSimulateElectronLossCmd )
     { fA2Detector->SetTPCSimulateElectronLoss(fTPCSimulateElectronLossCmd->GetNewBoolValue(newValue));}
    
-  if( command == fTPCLambdaAttachementFactorCmd )
-    { fA2Detector->SetTPCLambdaAttachementFactor(fTPCLambdaAttachementFactorCmd->GetNewDoubleValue(newValue));}
+  if( command == fTPCLambdaAttachementCmd )
+    { fA2Detector->SetTPCLambdaAttachement(fTPCLambdaAttachementCmd->GetNewDoubleValue(newValue));}
   
   if( command == fTPCDetectorEfficiencyCmd )
     { fA2Detector->SetTPCDetectionSurvivalProbability(fTPCDetectorEfficiencyCmd->GetNewDoubleValue(newValue));}

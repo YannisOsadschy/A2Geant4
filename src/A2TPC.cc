@@ -657,7 +657,7 @@ void A2TPC::MakeField(){
     regionInfo->SetEfield(fEfield);
     regionInfo->SetTemperature(fTemperature);
 	regionInfo->SetSimulateElectronLoss(fSimulateElectronLoss);
-	regionInfo->SetLambdaAttachementFactor(fLambdaAttachementFactor);
+	regionInfo->SetLambdaAttachement(fLambdaAttachement);
 	regionInfo->SetDetectionSurvivalProbability(fDetectionSurvivalProbability);
 
     const G4double anodeCenterZ =-fLength/2. + fAnodeDistance;
