@@ -1,34 +1,113 @@
+#include <iostream>
+#include <vector>
+#include <array>
+#include <stdexcept>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <cmath>
+#include <algorithm>
+#include <limits>
+
+struct SegPosition
+{
+    Double_t rMin;
+    Double_t rMax;
+    Double_t phiMin;
+    Double_t phiMax;
+
+};
+
 
 //Global definitions
-Double_t vdrift = 354; //cm/ms: 1/10 of what is in A2DriftModel::SetConstants
-Double_t qeslope = -0.000208; //from output of Calibrate.C
-Double_t qeintercept = -0.89; //from output of Calibrate.C
+Double_t vdrift; //cm/ms //is now set automatically
+Double_t qeslope = -4.26893e-05; //from output of Calibrate.C   //old value: -0.000208
+Double_t qeintercept = 0.0028382; //from output of Calibrate.C	//old value: -0.89
 
-//Attach an anode section ID number to an x coordinate for theta reconstruction
-Double_t GetX(Int_t secID){
-	//based on anode numbering scheme in g4
-        Int_t row1[16] = {1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61};
-        Int_t row2[16] = {2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62};
-        Int_t row3[16] = {3,7,11,15,19,23,27,31,35,39,43,47,51,55,59,63};
-        Int_t row4[16] = {4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64};
-        for (int i=0;i<16;i++){ //over all angular sections in one ring
-		//these numbers need to be changed if testing different anode designs!
-                if (secID==row1[i])return 10; //assign the radius of that ring
-                if(secID==row2[i])return 20;
-                if(secID==row3[i])return 30;
-                if(secID==row4[i])return 40;
+
+void GetAnodeLayoutFromDataFile(std::string fileName, std::vector<Double_t>& radii, std::vector<Int_t>& nSegments)
+{
+	std::ifstream inputStream(fileName);
+
+	if (!inputStream)
+	{
+		throw std::runtime_error(fileName+" does not exist");
+	}
+	std::string line;   
+	Int_t ierr = 0;
+	while (std::getline(inputStream, line))
+	{
+		if (line.empty() || line[0]=='#')
+		{
+			continue;
+		}
+		Int_t nSegment;
+		Double_t radius;
+		std::istringstream iss(line);
+		std::string key;
+		iss>>key;
+		if (key=="Anode-Radii:")
+		{
+			radii.clear();
+			while(iss>>radius)
+			{
+				radii.push_back(radius);
+			}
+			++ierr;
+		}
+		else if (key=="Anode-Segments:")
+		{
+			nSegments.clear();
+			while(iss>>nSegment)
+			{
+				nSegments.push_back(nSegment);
+			}
+			++ierr;
+		}	
+	}
+	if (ierr!=2)
+	{
+		throw std::runtime_error("format of anode layout data file is incorrect");
+	}
+}
+
+
+SegPosition GetSegPosition(Int_t measuredSegID)
+{
+	std::vector<Int_t> nSegments;
+    std::vector<Double_t> radii;
+	//actual design used in the simulation
+	GetAnodeLayoutFromDataFile("data/TPC.dat",radii,nSegments);
+    Int_t segID=0;
+    for (std::size_t i=0; i<radii.size()-1; ++i)
+    {
+        SegPosition segPostion;
+        segPostion.rMin = radii[i];
+        segPostion.rMax = radii[i+1];
+        for (std::size_t j=0; j<nSegments[i]; ++j)
+        {
+            segPostion.phiMin = 360./nSegments[i]*j;
+            segPostion.phiMax = 360./nSegments[i]*(j+1);
+            ++segID;
+            if (measuredSegID==segID)
+            {
+                return segPostion;
+            }
         }
-        if (secID==65)return 5; //central ring
-        return 0; //central pad
+    }
+    throw std::runtime_error("measuredSegID does not exist in Cathode design");
+}
+
+Double_t GetDistance(Double_t r1, Double_t phi1, Double_t r2, Double_t phi2 )
+{
+    return std::sqrt(r1*r1+r2*r2-2*r1*r2*cos((phi1-phi2)*3.1415926/180));
 }
 
 //Reconstruct recoil polar angle
-Double_t GetTheta(Double_t mintime, Double_t maxtime, Double_t minx, Double_t maxx){
-	Double_t deltax, deltat, theta;
-	theta=0;
-	deltax=maxx-minx;
-	deltat=maxtime-mintime;
-	if(deltax!=0 && deltat!=0)theta=90-atan((deltat*vdrift*10)/deltax)*(180/3.14);
+Double_t GetTheta(Double_t delta_s,Double_t delta_t)
+{
+	Double_t theta = 0;
+	if(delta_s!=0 && delta_t!=0)theta=90-atan((delta_t*vdrift*10)/delta_s)*(180/3.141);
 	return theta;
 }
 
@@ -43,6 +122,220 @@ Double_t GetEnergy(Double_t charge){
 	Double_t energy = qeintercept + (qeslope)*charge;
 	return energy;
 }
+
+double GetMean(const std::vector<double>& list)
+{
+    double sum = 0;
+    int n =list.size();
+    for (std::size_t i=0; i<n; ++i)
+    {
+        sum += list[i]; 
+    }
+    return sum/n;
+}
+
+double GetStandardDeviation(const std::vector<double>& list)
+{
+    double sum = 0;
+    int n =list.size();
+    double mean = GetMean(list);
+    for (std::size_t i=0; i<n; ++i)
+    {
+        sum += (list[i]-mean)*(list[i]-mean); 
+    }
+    return std::sqrt(sum/(n-1));
+}
+
+std::vector<std::size_t> GetArgSort(const std::vector<double>& list)
+{
+    int n =list.size();
+    std::vector<std::size_t> index;
+    for (std::size_t i=0; i<n; ++i)
+    {
+        index.push_back(i);
+    }
+    std::sort(index.begin(), index.end(), [&](size_t i, size_t j){return list[i] < list[j];});
+    return index;
+}
+
+void TransformCircleToCartresian(double& r, double& phi, double& x, double& y)
+{
+    x = r*std::cos(3.14159/180*phi);
+    y = r*std::sin(3.14159/180*phi);
+}
+
+
+
+void GetDistanceAndTime2(Int_t ntpc, Float_t* qtpc, Int_t* itpc, Double_t* tMeantpc, Double_t* tSigmatpc, Float_t charge,
+                         Double_t& delta_s, Double_t& delta_t, double& xStart, double& yStart, double& xEnd, double& yEnd, 
+                         Bool_t& disregardLowChargePads, std::vector<Int_t>& disregardedPads, std::vector<Int_t>& selectedPads,
+                         Bool_t& useForAngular, std::size_t runIndex, double discardPadThreshhold = 100)
+{
+    xStart = 0.0;
+    yStart = 0.0;
+    xEnd   = 0.0;
+    yEnd   = 0.0;
+    disregardLowChargePads = true;
+
+    //filter
+	std::vector<Float_t> qtpc2;
+    std::vector<Int_t> itpc2;
+    std::vector<double> meanttpc2, sigmattpc2;
+	Int_t ntpc2 = 0;
+	for (std::size_t i=0; i<ntpc; ++i)
+	{
+		if (std::abs(qtpc[i])>discardPadThreshhold && itpc[i]!=64)
+        //if (std::abs(qtpc[i])>2000 && itpc[i]!=64)
+		{
+			qtpc2.push_back(qtpc[i]);
+			itpc2.push_back(itpc[i]);
+            meanttpc2.push_back(tMeantpc[i]);
+            sigmattpc2.push_back(tSigmatpc[i]);
+			++ntpc2;
+		}
+		else
+		{
+			disregardedPads.push_back(itpc[i]);
+		}
+    }
+    std::vector<std::size_t> index = GetArgSort(meanttpc2);
+    std::vector<Float_t> qtpc3;
+    std::vector<Int_t> itpc3;
+    std::vector<double> meanttpc3, sigmattpc3;
+	Int_t ntpc3 = ntpc2;
+    for (std::size_t i=0; i<ntpc2; ++i)
+    {
+        itpc3.push_back(itpc2[index[i]]);
+        qtpc3.push_back(qtpc2[index[i]]);
+        meanttpc3.push_back(meanttpc2[index[i]]);
+        sigmattpc3.push_back(sigmattpc2[index[i]]);
+    }
+    if (ntpc2 < 2)
+    {
+        useForAngular = false;
+        return;
+    }
+    if (meanttpc3[0]+sigmattpc3[0]>meanttpc3[ntpc3-1]-sigmattpc3[ntpc3-1])
+	{
+        useForAngular = false;
+	}
+    if (useForAngular)
+    {
+        delta_t =  meanttpc3[ntpc3-1] + sigmattpc3[ntpc3-1] - (meanttpc3[0] - sigmattpc3[0]);
+
+        std::vector<Int_t> itpcStart;
+        Int_t ntpcStart = 0;
+        std::vector<Int_t> itpcEnd;
+        Int_t ntpcEnd = 0;
+
+        for (std::size_t i=0; i<ntpc3; ++i)
+        {
+            if (meanttpc3[i]-sigmattpc3[i]<meanttpc3[0]+sigmattpc3[0])
+            {
+                itpcStart.push_back(itpc3[i]);
+                ++ntpcStart;
+            }
+            if (meanttpc3[i]+sigmattpc3[i]>meanttpc3[ntpc3-1]-sigmattpc3[ntpc3-1])
+            {
+                itpcEnd.push_back(itpc3[i]);
+                ++ntpcEnd;
+            }
+        }
+        for (std::size_t i=0; i<ntpcStart; ++i)
+        {
+            SegPosition seg = GetSegPosition(itpcStart[i]);
+            double r =  (seg.rMin+seg.rMax)/2;
+            double phi = (seg.phiMin+seg.phiMax)/2;
+            double x,y;
+            TransformCircleToCartresian(r,phi,x,y);
+            xStart += x/ntpcStart;
+            yStart += y/ntpcStart;
+        }
+        for (std::size_t i=0; i<ntpcEnd; ++i)
+        {
+            SegPosition seg = GetSegPosition(itpcEnd[i]);
+            double r =  (seg.rMin+seg.rMax)/2;
+            double phi = (seg.phiMin+seg.phiMax)/2;
+            double x,y;
+            TransformCircleToCartresian(r,phi,x,y);
+            xEnd += x/ntpcEnd;
+            yEnd += y/ntpcEnd;
+        }
+        delta_s = std::sqrt((xStart-xEnd)*(xStart-xEnd)+(yStart-yEnd)*(yStart-yEnd));
+    }
+}
+
+void GetDistanceAndTime3(Int_t ntpc, Float_t* qtpc, Int_t* itpc, Double_t* tMeantpc, Double_t* tSigmatpc, Float_t charge,
+                         Double_t& delta_s, Double_t& delta_t, double& xStart, double& yStart, double& xEnd, double& yEnd, 
+                         Bool_t& disregardLowChargePads, std::vector<Int_t>& disregardedPads, std::vector<Int_t>& selectedPads,
+                         Bool_t& useForAngular, std::size_t runIndex, double discardPadThreshhold = 100 )
+{
+    xStart = 0.0;
+    yStart = 0.0;
+    xEnd   = 0.0;
+    yEnd   = 0.0;
+    disregardLowChargePads = true;
+
+    //filter
+	std::vector<Float_t> qtpc2;
+    std::vector<Int_t> itpc2;
+    std::vector<double> meanttpc2, sigmattpc2;
+	Int_t ntpc2 = 0;
+	for (std::size_t i=0; i<ntpc; ++i)
+	{
+		if (std::abs(qtpc[i])>discardPadThreshhold && itpc[i]!=64)
+		{
+			qtpc2.push_back(qtpc[i]);
+			itpc2.push_back(itpc[i]);
+            meanttpc2.push_back(tMeantpc[i]);
+            sigmattpc2.push_back(tSigmatpc[i]);
+			++ntpc2;
+		}
+		else
+		{
+			disregardedPads.push_back(itpc[i]);
+		}
+    }
+    std::vector<std::size_t> index = GetArgSort(meanttpc2);
+    std::vector<Float_t> qtpc3;
+    std::vector<Int_t> itpc3;
+    std::vector<double> meanttpc3, sigmattpc3;
+	Int_t ntpc3 = ntpc2;
+    for (std::size_t i=0; i<ntpc2; ++i)
+    {
+        itpc3.push_back(itpc2[index[i]]);
+        qtpc3.push_back(qtpc2[index[i]]);
+        meanttpc3.push_back(meanttpc2[index[i]]);
+        sigmattpc3.push_back(sigmattpc2[index[i]]);
+    }
+    if (ntpc2 < 2)
+    {
+        useForAngular = false;
+        return;
+    }
+    if (useForAngular)
+    {
+        delta_t =  meanttpc3[ntpc3-1] + sigmattpc3[ntpc3-1] - (meanttpc3[0] - sigmattpc3[0]);
+
+        SegPosition segStart = GetSegPosition(itpc3[0]);
+        double rStart =  (segStart.rMin+segStart.rMax)/2;
+        double phiStart = (segStart.phiMin+segStart.phiMax)/2;
+        TransformCircleToCartresian(rStart,phiStart,xStart,yStart);
+
+        SegPosition segEnd = GetSegPosition(itpc3[ntpc3-1]);
+        double rEnd =  (segEnd.rMin+segEnd.rMax)/2;
+        double phiEnd = (segEnd.phiMin+segEnd.phiMax)/2;
+        TransformCircleToCartresian(rEnd,phiEnd,xEnd,yEnd);
+        delta_s = std::sqrt((xStart-xEnd)*(xStart-xEnd)+(yStart-yEnd)*(yStart-yEnd));
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 //Draw the reconstruction output
 void Draw(TFile* output){
@@ -85,7 +378,7 @@ void Draw(TFile* output){
 	theta->GetXaxis()->SetTitle("True");
 	theta->GetYaxis()->SetTitle("Reconstructed");
 	c4->cd(5);
-	recon->Draw("z_rec:z_true","abs(z_rec)<11.5 && energy_rec>0","");
+	recon->Draw("z_rec:z_true","std::abs(z_rec)<11.5 && energy_rec>0","");
 	TH2F *zco = (TH2F*)gPad->GetPrimitive("htemp");
 	zco->SetTitle("Event Z Position (cm)");
 	zco->GetXaxis()->SetTitle("True");
@@ -104,31 +397,47 @@ void Reconstruct(TString filename){
 	//read in data file and tree
 	TFile *in = new TFile(filename);
 	TTree *h12 = (TTree*)in->Get("h12");
+	//Get vdrift set in the simulation
+    vdrift=((TParameter<Double_t>*)in->Get("TPCvDrift"))->GetVal()/10;
 	//define variables for input tree information
-	Int_t ntpc;
-	Int_t *itpc = new Int_t[100];
-	Float_t *qtpc = new Float_t[100];
-	Float_t *ttpc = new Float_t[100];
-	Float_t *vertex = new Float_t[3];
-	Float_t *klab = new Float_t[3];
-	Float_t dircos[100][3];
+	Int_t ntpc;							//true: number of electrons per event
+	Int_t *itpc = new Int_t[100];     	//measured: id of pad
+	Float_t *qtpc = new Float_t[100];  	//measured:something related to the charge 
+	Float_t *ttpc = new Float_t[100];	//measured: time of impact of electrons
+    Double_t *tMeantpc = new Double_t[100];
+    Double_t *tSigmatpc = new Double_t[100];
+	Float_t *vertex = new Float_t[3];	//true:  position of hadron
+	Float_t *klab = new Float_t[3];		//true: energy of hadron  
+	Float_t dircos[100][3];				//true: cosine of momentum direction in x,y,z values for each created particle during creation 
+    std::vector<std::vector<double>>* tRawtpc =nullptr; //hit times
 	//set branch addresses for input tree
 	h12->SetBranchAddress("ntpc",&ntpc);
 	h12->SetBranchAddress("itpc",itpc);
 	h12->SetBranchAddress("qtpc",qtpc);
 	h12->SetBranchAddress("ttpc",ttpc);
+    h12->SetBranchAddress("tMeantpc",tMeantpc);
+    h12->SetBranchAddress("tSigmatpc",tSigmatpc);
 	h12->SetBranchAddress("klab",klab);
 	h12->SetBranchAddress("vertex",vertex);
 	h12->SetBranchAddress("dircos",&dircos);
+    h12->SetBranchAddress("tRawtpc",&tRawtpc);
+
 	//define variables to be used in computations
-	Int_t first_sec, last_sec;
-	Float_t first_time, last_time, charge;
+	Float_t charge;
 	Int_t max = h12->GetEntries();
 	//define variables for output tree information
 	Float_t theta_true, z_true, energy_true;
 	Float_t theta_rec, z_rec, energy_rec;
 	Double_t hits[100][2];
-	Float_t deltat;
+	Bool_t disregardLowChargePads = false;
+	std::vector<Int_t> disregardedPads;
+	std::vector<Int_t> selectedPads;
+    std::vector<Int_t> dominantPads;
+    double xStart;
+    double yStart;
+    double xEnd ;
+    double yEnd;
+    Double_t delta_s, delta_t;
 	//define output file and tree
 	TFile *out = new TFile("Reconstructed.root","RECREATE","Reconstructed TPC Data");
 	TTree *goat = new TTree("recon","Reconstructed TPC Data");
@@ -139,47 +448,80 @@ void Reconstruct(TString filename){
 	goat->Branch("z_true",&z_true,"z_true/F"); //simulated z coordinate
 	goat->Branch("energy_rec",&energy_rec,"energy_rec/F"); //reconstructed recoil energy
 	goat->Branch("energy_true",&energy_true,"energy_true/F"); //simulated recoil energy
-	//goat->Branch("dt",&deltat,"dt/F");
+    goat->Branch("delta_s",&delta_s,"delta_s/D");
+    goat->Branch("delta_t",&delta_t,"delta_t/D"); 
+	goat->Branch("disregardLowChargePads", &disregardLowChargePads);
+	goat->Branch("disregardedPads", &disregardedPads);
+	goat->Branch("selectedPads", &selectedPads);
+    goat->Branch("dominantPads", &dominantPads);
+    goat->Branch("xStart",&xStart);
+    goat->Branch("yStart",&yStart);
+    goat->Branch("xEnd",&xEnd);
+    goat->Branch("yEnd",&yEnd);
+
 	Double_t mintime, maxtime, minx, maxx;
 	//read input file, do computations, and write output file
-	for (int i=0;i<max;i++){
+	for (Int_t i=0;i<max;i++){
 		h12->GetEntry(i);
 		charge=0; //initialize
 		//sum charge over all anode sections
-		for (int j=0;j<ntpc;j++){
+		for (Int_t j=0;j<ntpc;j++){
 			charge+=qtpc[j];
 		}
 		//get two data points for theta
 		//Note index 0 = most recently saved by simulation = last to occur
 		//index ntpc-1 = first saved by simulation = first to occur
 		//so point 1 = "min" = tpc[ntpc-1], point 2 = "max" = tpc[0]
-		maxtime=ttpc[0];
-		maxx=GetX(itpc[0]);
-		mintime=ttpc[ntpc-1];
-		minx=GetX(itpc[ntpc-1]);
-		//try not to use central pad for min if hits in both ring and one other section
-			
-		if (minx==0 && maxx !=5){
-			for (int j=0; j<ntpc; j++){
-				if (itpc[j]==65){
-					minx=5;
-					mintime=ttpc[j];
-				}
-			}
+
+
+        Bool_t useForAngular = true;
+        //std::vector<std::vector<double>>& raw = *tRawtpc;
+        xStart = 0;
+        yStart = 0;
+        xEnd = 0;
+        yEnd = 0;
+        delta_s = 0.0;
+        delta_t = 0.0;
+        
+        /*
+		GetDistanceAndTime3(ntpc, qtpc, itpc, tMeantpc, tSigmatpc, charge,
+                            delta_s, delta_t,
+                            xStart, yStart, xEnd, yEnd,
+                            disregardLowChargePads, disregardedPads, selectedPads,
+                            useForAngular, static_cast<std::size_t>(i+1));
+        */
+
+        
+        GetDistanceAndTime2(ntpc, qtpc, itpc, tMeantpc, tSigmatpc, charge,
+                            delta_s, delta_t,
+                            xStart, yStart, xEnd, yEnd,
+                            disregardLowChargePads, disregardedPads, selectedPads,
+                            useForAngular, static_cast<std::size_t>(i+1));
+
+        
+		if (useForAngular)
+		{
+			theta_rec=GetTheta(delta_s, delta_t);
 		}
-		
-	
-		//reconstruct variables
+		else
+		{
+			theta_rec=0;
+		}
 		z_rec=GetZ(ttpc[ntpc-1]); //central section: along beam line
-		energy_rec=GetEnergy(charge);
-		theta_rec=GetTheta(mintime,maxtime,minx,maxx);	
+		energy_rec=GetEnergy(charge);	
 		//get true variables
-		theta_true=acos(dircos[1][2])*180/3.14;
+		theta_true=acos(dircos[0][2])*180/3.14;  //changed 1 to 0, since the hadron is the first particle created in phase space mode
 		z_true=vertex[2];
-		energy_true=klab[1];
+		energy_true=klab[0];			//changed 1 to 0, since the hadron is the first particle created in phase space mode
 		//write to tree
 		goat->Fill();
+		disregardedPads.clear();
+		selectedPads.clear();
+        dominantPads.clear();
 	}
 	out->Write(); //write the goat tree to a file and make the file
+
+    std::cout << std::endl;
 	Draw(out);
 }
+

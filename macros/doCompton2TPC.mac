@@ -1,0 +1,45 @@
+#####Pre-Initialisation
+#Choose a physics list, for a full listing type /A2/physics/ListPhysics
+#/A2/physics/Physics QGSP_BERT
+#/A2/physics/CutsAll 1 mm
+
+####Initialise
+/run/initialize
+
+##0 = EPGA_g4           normaler Geant4 ParticleGun-Modus
+##1 = EPGA_phase_space  zufälliger Phasenraumgenerator
+##2 = EPGA_FILE         Events aus ROOT-Inputdatei
+##3 = EPGA_Overlap      Spezialmodus für Overlap/Debugging
+
+/A2/generator/Mode 1
+/A2/generator/SetTMax 0. MeV
+/A2/generator/SetTMin 8. MeV
+/A2/generator/SetThetaMin 0. deg
+/A2/generator/SetThetaMax 90. deg
+/A2/generator/SetPhiMin 0.0 deg
+/A2/generator/SetPhiMax 360.0 deg
+/A2/generator/SetBeamXSigma 10. mm
+/A2/generator/SetBeamYSigma 10. mm
+/A2/generator/SetTargetZ0 0 cm
+/A2/generator/SetTargetThick 20. cm
+/A2/generator/SetTargetRadius 10. mm
+
+/A2/stepping/sampleElectrons true
+
+#####Output
+#Open the output file for writing
+/A2/event/setOutputFile Geant-Out.root
+/A2/event/storePrimaries false
+
+#/gun/particle opticalphoton
+#/gun/polarization 0 1 0
+
+#/gun/particle gamma
+#/gun/particle e-
+#/gun/particle e+
+#/gun/particle pi+
+#/gun/particle proton
+#/gun/particle neutron
+#/gun/particle He3
+/gun/particle alpha
+/run/beamOn 100

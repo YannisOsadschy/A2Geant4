@@ -12,6 +12,8 @@ class G4UIcmdWithAString;
 class G4UIcmdWithoutParameter;
 class G4UIcmdWithADoubleAndUnit;
 class G4UIcmdWith3VectorAndUnit;
+class G4UIcmdWithABool;
+class G4UIcmdWithADouble;
 
 class A2DetectorMessenger: public G4UImessenger
 {
@@ -51,6 +53,16 @@ class A2DetectorMessenger: public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fPIDZCmd;
     G4UIcmdWithADoubleAndUnit* fPIDRotCmd;
     G4UIcmdWithADoubleAndUnit* fPizzaZCmd;
+
+    G4UIcmdWithADoubleAndUnit* fTPCtemperatureCmd;
+    G4UIcmdWithADoubleAndUnit* fTPCpressureCmd;
+    G4UIcmdWithADoubleAndUnit* fTPCefieldCmd; 
+    G4UIcmdWithABool* fTPCSimulateElectronLossCmd;
+    G4UIcmdWithADouble* fTPCDetectorEfficiencyCmd;
+    G4UIcmdWithADoubleAndUnit* fTPCLambdaAttachementCmd;
+ 
+    G4UIcmdWithAString* fTPCMaterialCmd;
+
  };
 
 #endif

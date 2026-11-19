@@ -24,6 +24,7 @@ A Postuma 2021 *****/
 #include "G4ChordFinder.hh"
 #include "CLHEP/Units/SystemOfUnits.h"
 
+#include <vector>
 
 class A2TPC : public A2Target //define this class as part of class A2Target
 {
@@ -41,8 +42,16 @@ public: //declare all public functions
 	void MakeField();
 	void PlaceParts();
 	void DefineMaterials();
+	void DefineMaterialsLegacy();
 	void ReadParameters(const char*);
 	void SetIsOverlapVol(G4int isOv){ fIsOverlapVol = isOv; }
+    void SetHePressure(G4double pressure){fHePressure=pressure;}
+    void SetHeMaterial(G4String material){fHeMaterial=material;}
+    void SetEfield(G4double Efield){fEfield=Efield;}
+    void SetTemperature(G4double temperature){fTemperature=temperature;}
+	void SetSimulateElectronLoss(G4bool simulateElectronLoss){fSimulateElectronLoss=simulateElectronLoss;}
+	void SetLambdaAttachement(G4double lambdaAttachement){fLambdaAttachement=lambdaAttachement;}
+	void SetDetectionSurvivalProbability(G4double detectionSurvivalProbability){fDetectionSurvivalProbability=detectionSurvivalProbability;}
 
 private: //private declarations
 
@@ -90,8 +99,8 @@ private: //private declarations
 	G4LogicalVolume* fAnodeLogic;
 	G4LogicalVolume* fAnodeCentreLogic;
         G4LogicalVolume* fAnodeRingLogic;
-	G4Tubs* fAnodeSec[6]; //solid for each wire
-        G4LogicalVolume* fAnodeSecLogic[6]; //logic of each wire
+	//G4Tubs* fAnodeSec[6]; //solid for each wire
+    std::vector<G4LogicalVolume*> fAnodeRingSectorsLogic; //logic of each wire
 
         //G4LogicalVolume* fAnodeSec1Logic;
         //G4LogicalVolume* fAnodeSec2Logic;
@@ -116,21 +125,29 @@ private: //private declarations
 	G4double fGThickness;
 	G4double fAnodeRadius;
 	G4double fAnodeDistance;
-	G4double fRadPad;
-	G4double fRadRing;
-	G4double fRad1;
-	G4double fRad2;
-	G4double fRad3;
-	G4double fRad4;
-	G4int fAngularSecs;
+	//G4double fRadPad;
+	//G4double fRadRing;
+	//G4double fRad1;
+	//G4double fRad2;
+	//G4double fRad3;
+	//G4double fRad4;
+	//G4int fAngularSecs;
+	std::vector<G4double> fAnodeSegmentsRadii;
+	std::vector<G4int> fAnodeSegmentsN;
 	G4double fAlThickness;
 	G4double fCathodeRadius;
 	G4double fCathodeDistance;
 	G4double fWireThickness;
 	G4double fWireSpacing;
-	G4int fHeIsotope;
+	//G4int fHeIsotope; active target gas is now set in the detectormessenger not the data file
 	G4double fHePressure;
 	G4String fHeMaterial;
+    G4double fEfield; //V/mm
+    G4double fTemperature; //K
+
+	G4bool fSimulateElectronLoss = false;
+    G4double fLambdaAttachement;
+    G4double fDetectionSurvivalProbability;
 
 	//for placing anode
 	//G4VPhysicalVolume** fAnodePhysi;

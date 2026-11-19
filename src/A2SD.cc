@@ -29,7 +29,6 @@ A2SD::A2SD(G4String name,G4int Nelements):G4VSensitiveDetector(name)
   for(G4int i=0;i<fNelements;i++)fhitID[i]=-1;
   fHits=new G4int[fNelements];
   for(G4int i=0;i<fNelements;i++)fHits[i]=0;
-  hitTimes=new std::vector<double>[fNelements]; //create vector for each section of anode
   avgTime=new G4double[fNelements];
   for(G4int i=0;i<fNelements;i++)avgTime[i]=0;
   //do I need to initialize vector?? set to zero?
@@ -59,7 +58,7 @@ void A2SD::Initialize(G4HCofThisEvent*)
 
 G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
 { 
-  
+
   G4double edep = aStep->GetTotalEnergyDeposit();
   if ((edep/keV == 0.)) return false;      
   // This TouchableHistory is used to obtain the physical volume
@@ -79,7 +78,16 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
   //seperate ADC gates for TAPS
   if(mothervolume->GetName().contains("COVR")){if (aStep->GetPreStepPoint()->GetGlobalTime()>2000*ns) return false; }
   //long ADC gate for TPC to record electron drift
-  if(volume->GetName().contains("Anode")){ if (aStep->GetPreStepPoint()->GetGlobalTime()>2*ms) return false; }
+  G4Track* track = aStep->GetTrack();
+  A2UserTrackInformation* track_info = (A2UserTrackInformation*) track->GetUserInformation();
+  if(volume->GetName().contains("Anode"))
+  { 
+    // Only manually sampled TPC drift electrons may generate anode hits
+    if (!track_info->GetIsSampledTPCDriftElectron()) return false;
+    if (aStep->GetPreStepPoint()->GetGlobalTime()>2*ms) return false; 
+  }
+  
+
   else if (aStep->GetPreStepPoint()->GetGlobalTime()>600*ns)return false;
 
   if(volume->GetName().contains("PhysiHe")) return false;
@@ -95,18 +103,14 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
   //    edep = emSaturation->VisibleEnergyDepositionAtAStep(aStep);
   //}
 
-  // get track information
-  G4Track* track = aStep->GetTrack();
-  A2UserTrackInformation* track_info = (A2UserTrackInformation*)
-                                        track->GetUserInformation();
   //use this to get charge of particle hitting detector: for TPC anode
   G4double qdep = track->GetDynamicParticle()->GetCharge();
   //if(volume->GetName().contains("Pb")) G4cout<<volume->GetName()<<" id "<<id <<" "<<mothervolume->GetCopyNo()<<" "<<volume->GetCopyNo()<<" edep "<<edep/MeV<<G4endl;
   //G4bool anodeHit=volume->GetName().contains("HELIUM");
   //if ((fhitID[id]==-1)&&(anodeHit!=1)){ //NOT for helium
- //if((fhitID[id]==-1)||(volume->GetName().contains("Anode")&&fhitID[id]>20)){ //max at 20 electrons per hit   
+  //if((fhitID[id]==-1)||(volume->GetName().contains("Anode")&&fhitID[id]>20)){ //max at 20 electrons per hit   
   if(fhitID[id]==-1){ 
- //if this crystal has already had a hit
+  //if this crystal has already had a hit
     //don't make a new one, add on to old one.   
     //G4cout<<"Make hit "<<id<<G4endl;
     A2Hit* myHit = new A2Hit();
@@ -122,44 +126,49 @@ G4bool A2SD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
     fHits[fNhits++]=id;
     //some TPC stuff: initialize the vector and average
     G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
-    hitTimes[id].push_back(time); //add first time
-    avgTime[id]=time; //average of one entry is itself: use averaging function later
+    myHit->ClearHitTimesTPC();
+    myHit->AppendHitTimeTPC(time/ms);
+
+    //TPC driftParameters are currently passed as the following: A2DriftandHitLogic->A2UserTrackInformation->A2Hit->A2CBOutput for every track. 
+    //To save memory it would better to move the determination of the Drift parameters from A2DriftandHitLogic to the A2TPC 
+    //and pass the parameters to A2CBOutput via the A2DetectorConstruction
+    if (track_info->GetHasDriftParametersTPC())
+    {
+        myHit->SetHasDriftParametersTPC(true);
+        DriftParametersTPC driftParameters = track_info->GetDriftParametersTPC();
+        myHit->SetDriftParametersTPC(driftParameters.selectedPressure,
+                                driftParameters.selectedEfield,
+                                driftParameters.vDrift,
+                                driftParameters.longitudinalDiffusionCoefficient,
+                                driftParameters.transversalDiffusionCoefficient);
+    }
+
+
   }
   else // This is not new
   {
-    (*fCollection)[fhitID[id]]->AddEnergy(edep);
-    (*fCollection)[fhitID[id]]->AddCharge(qdep);
-    (*fCollection)[fhitID[id]]->AddPartEnergy(track_info->GetPartID(), edep);
-    (*fCollection)[fhitID[id]]->AddPartCharge(track_info->GetPartID(), qdep);
-    //G4cout<<"Adding to existing hit"<<G4endl;
-    // set more realistic hit times
+    A2Hit* myHit = (*fCollection)[fhitID[id]];
+    myHit->AddEnergy(edep);
+    myHit->AddCharge(qdep);
+    myHit->AddPartEnergy(track_info->GetPartID(), edep);
+    myHit->AddPartCharge(track_info->GetPartID(), qdep);
     G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
-    //do something here to fix time for Anode hits???
     if (volume->GetName().contains("TAPS"))
     {
-      if (edep/MeV > 4. && time < (*fCollection)[fhitID[id]]->GetTime())
-        (*fCollection)[fhitID[id]]->SetTime(time);
+      if (edep/MeV > 4. && time < myHit->GetTime())
+        myHit->SetTime(time);
     }
     else if (volume->GetName().contains("CRYSTAL"))
     {
-      if (edep/MeV > 2. && time < (*fCollection)[fhitID[id]]->GetTime())
-        (*fCollection)[fhitID[id]]->SetTime(time);
+      if (edep/MeV > 2. && time < myHit->GetTime())
+        myHit->SetTime(time);
     }
-    //TPC stuff: take average time to actually do some Time Projecting
     else if (volume->GetName().contains("Anode")) //play with anode times
     {
-      hitTimes[id].push_back(time);
-      avgTime[id]=accumulate(hitTimes[id].begin(), hitTimes[id].end(),0)/hitTimes[id].size();
-      //(*fCollection)[fhitID[id]]->SetTime(avgTime[id]);
-      //if (id==66 && time > (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
+      myHit->AppendHitTimeTPC(time/ms);
       if ( time < (*fCollection)[fhitID[id]]->GetTime()) (*fCollection)[fhitID[id]]->SetTime(time);
-	 //if (id == 1 && time < (*fCollection)[fhitID[id]]->GetTime())
-	   //   (*fCollection)[fhitID[id]]->SetTime(time); //set minimum possible time
-     //else if (time > (*fCollection)[fhitID[id]]->GetTime())
-	//      (*fCollection)[fhitID[id]]->SetTime(time);
     }
   }
-  //G4cout<<"done "<<fNhits<<G4endl;
   return true;
 }
 
@@ -177,11 +186,6 @@ void A2SD::EndOfEvent(G4HCofThisEvent* HCE)
       fhitID[fHits[i]]=-1;
       //reset time vectors for TPC calculations
       //print time vectors: this was used to study time distribution in hit
-      //for (G4int k=0; k<int(hitTimes[fHits[i]].size()); k++){
-      //		G4cout<<hitTimes[fHits[i]][k]<<" "; //print each individual time
-      //}
-      //G4cout<<G4endl;
-      hitTimes[fHits[i]].clear();
       fHits[i]=0;
     }
   fNhits=0;

@@ -24,11 +24,17 @@
 #include "G4FastSimulationManager.hh"
 #include "G4ProductionCuts.hh"
 #include "G4ProductionCutsTable.hh"
+#include "G4UserLimits.hh"
 
 #include "G4FieldManager.hh" //manage the fields
 #include "G4TransportationManager.hh" //transport through fields
 #include "CLHEP/Units/SystemOfUnits.h" //units
 #include "G4IntegrationDriver.hh"
+
+#include "A2UserRegionInformation.hh"
+#include <vector>
+#include <string>
+#include <sstream>
 
 using namespace CLHEP; //units
 
@@ -52,10 +58,18 @@ A2TPC::A2TPC(){
 	fVesselHeLogic = NULL; //helium inside vessel (union solid)
 	//volumes in MakeAnodeCathode()
 	fAnodeLogic = NULL; //contains all anode parts
-        fAnodeCentreLogic= NULL; //centre of anode
-        fAnodeRingLogic= NULL; //ring around anode centre
+
+
+    //fAnodeCentreLogic= NULL; //centre of anode
+    //fAnodeRingLogic= NULL; //ring around anode centre
+
+
 	fCathodeLogic= NULL; //cathode (one piece)
-	for(G4int i=0;i<6;i++)fAnodeSecLogic[i]=NULL; //array of anode segments
+
+
+	//for(G4int i=0;i<6;i++)fAnodeRingSectorsLogic[i]=NULL; //array of anode segments
+
+
 	//volumes in MakeGrid()
 	fGridLogic= NULL; //contains entire grid
 	for(G4int j=0;j<200;j++)fWireLogic[j]=NULL; //array of grid wires
@@ -76,6 +90,8 @@ A2TPC::A2TPC(){
 	fIsOverlapVol=true; //check overlaps in geometry
 
 	//read dimensions from a parameter file
+	fSimulateElectronLoss = false;
+
 	ReadParameters("data/TPC.dat");
 }
 
@@ -232,7 +248,7 @@ void A2TPC::MakeVessel(){
                  "ConeLogic");
 	//helium
 	fVesselHeLogic = new G4LogicalVolume
-		(fVesselHe,
+        (fVesselHe,
 		 fNistManager->FindOrBuildMaterial(fHeMaterial),
 		 "VesselHeLogic");
 	//extension cells
@@ -320,110 +336,52 @@ void A2TPC::MakeVessel(){
 void A2TPC::MakeAnodeCathode(){
         /***** solids for anode geometry *****/
         //main volume to hold sub-pieces
-	G4Tubs *fAnode = new G4Tubs("Anode", //name
+	
+    G4Tubs *fAnode = new G4Tubs("Anode", //name
                                         0, //inner radius
                                         fRadius, //outer radius
                                         (fGThickness)/2, //half length
                                         0.*deg, //start angle
                                         360.*deg); //spanning angle
-	
-	//circular central piece (G-10)
-        G4Tubs *fAnodeCentre = new G4Tubs("AnodeCentre",
-                                        0,
-                                        fRadPad*mm,
-                                        fGThickness/2,
-                                        0.*deg,
-                                        360.*deg);
-	//ring around central piece (G-10)
-        G4Tubs *fAnodeRing = new G4Tubs("AnodeRing", 
-					fRadPad*mm,
-                                        fRadRing*mm,
-					fGThickness/2,
-                                        0.*deg,
-                                        360.*deg);
-	
-	/***** logical volumes *****/	
-	//volume holding entire anode (helium)
-	fAnodeLogic = new G4LogicalVolume
+    fAnodeLogic = new G4LogicalVolume
                         (fAnode,
                          fNistManager->FindOrBuildMaterial(fHeMaterial),
                          "AnodeLogic");
-	
-	//circular central piece (G-10)
-        fAnodeCentreLogic = new G4LogicalVolume
-                        (fAnodeCentre,
-                        fNistManager->FindOrBuildMaterial("G-10"),
-                        "AnodeCentreLogic");
-	//ring around central piece (G-10)
-        fAnodeRingLogic = new G4LogicalVolume
-                        (fAnodeRing,
-                        fNistManager->FindOrBuildMaterial("G-10"),
-                        "AnodeRingLogic");
-	
-	/***** visualization attributes *****/
-        G4VisAttributes* lblue  = new G4VisAttributes( G4Colour(0.0,0.0,0.75) );
-        G4VisAttributes* grey   = new G4VisAttributes( G4Colour(0.5,0.5,0.5)  );
-        fAnodeLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
-        fAnodeCentreLogic->SetVisAttributes(lblue);
-        fAnodeRingLogic->SetVisAttributes(lblue);
 
-        /***** place anode parts to fAnodeLogic *****/
-        //circular central piece (G-10)
-	new G4PVPlacement(0, //rotation
-                        G4ThreeVector(0,0,0), //placement
-                        fAnodeCentreLogic, //logical volume
-                        "AnodeCentrePlacement", //name
-                        fAnodeLogic, //mother volume
-                        false, //pmany: always false
-                        //1);
-			2+4*(fAngularSecs),fIsOverlapVol); //unique copy number
-        //ring around central piece (G-10)
-	new G4PVPlacement(0, //rotation
-                        G4ThreeVector(0,0,0), //placement
-                        fAnodeRingLogic, //logical volume
-                        "AnodeRingPlacement", //name
-                        fAnodeLogic, //mother volume
-                        false, //pmany: always false
-                        //2);
-			1+4*(fAngularSecs),fIsOverlapVol); //unique copy number
-	
-	/*** segments of anode: reads specifications from parameter file ****/
-	/***** define solid and logical volume for each radial section *****/
-	//new design: add some 
-	G4double radii[5]={fRadRing,fRad1,fRad2,fRad3,fRad4};
-	for(G4int k=0; k<4; k++){
-		//section of each row (G-10)
-		fAnodeSec[k] = new G4Tubs("AnodeSec",
-                                        radii[k],
-					radii[k+1],
-					fGThickness/2,
-                                        0.*deg,
-					360.*deg/fAngularSecs);
-        	fAnodeSecLogic[k] = new G4LogicalVolume
-                        (fAnodeSec[k],
-                        fNistManager->FindOrBuildMaterial("G-10"),
-                        "AnodeSecLogic");
-		fAnodeSecLogic[k]->SetVisAttributes(lblue);
-
-		/***** place ring segments to anode *****/
-        	for(G4int h=0; h<fAngularSecs;h++){ //for however many angular sections were defined in paramter file
-          		//define the angle
-                	G4double theta = h*360.*deg/fAngularSecs;
-                	//generate a rotation matrix
-                	G4RotationMatrix* rot = new G4RotationMatrix(theta,0,0);
-                	//place one section of each ring at this angle
-			//section of first row (G-10)
-                	new G4PVPlacement(rot, //rotation
-                        G4ThreeVector(0,0,0),
-                        fAnodeSecLogic[k], //logical volume
-                        "AnodeSecPlacement", //name
-                        fAnodeLogic, //mother volume
-                        false, //pmany: always false
-                        1+h*4+k,fIsOverlapVol);
-			//1+h+k*fAngularSecs,fIsOverlapVol); //unique copy number
-		}
-	}
-        
+    G4VisAttributes* lblue  = new G4VisAttributes( G4Colour(0.0,0.0,0.75) );
+    G4VisAttributes* grey   = new G4VisAttributes( G4Colour(0.5,0.5,0.5)  );
+    fAnodeLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
+    
+    int anodeSegmentID=0;
+    for (std::size_t i=0;i<fAnodeSegmentsRadii.size()-1;++i)
+    {
+        G4Tubs* anodeRingSector = new G4Tubs("AnodeSec",
+                                fAnodeSegmentsRadii[i],
+								fAnodeSegmentsRadii[i+1],
+								fGThickness/2,
+                                0.*deg,
+								360.*deg/fAnodeSegmentsN[i]);
+        G4LogicalVolume* anodeRingSectorLogic = new G4LogicalVolume(anodeRingSector,
+                                                fNistManager->FindOrBuildMaterial("G-10"),
+                                                "AnodeSecLogic");
+        anodeRingSectorLogic->SetVisAttributes(lblue);
+        G4cout << "Ring:[" << fAnodeSegmentsRadii[i] << "," << fAnodeSegmentsRadii[i+1] <<"]" <<G4endl;
+        for (std::size_t j=0; j<fAnodeSegmentsN[i]; ++j)
+        {
+            ++anodeSegmentID;
+            G4cout << anodeSegmentID << G4endl;
+            G4double theta = j*360.*deg/fAnodeSegmentsN[i];
+            G4RotationMatrix* rot = new G4RotationMatrix(theta,0,0);
+            new G4PVPlacement(rot, //rotation
+                            G4ThreeVector(0,0,0),
+                            anodeRingSectorLogic, //logical volume
+                            "AnodeSecPlacement", //name
+                            fAnodeLogic, //mother volume
+                            false, //pmany: always false
+                            anodeSegmentID,fIsOverlapVol);
+        }
+        fAnodeRingSectorsLogic.push_back(anodeRingSectorLogic); //for later use as sensitive detector
+    }
 	/***** build solids for cathode geometry *****/
         //aluminum cathode
 	G4Tubs *fCathode = new G4Tubs("Cathode",
@@ -442,6 +400,135 @@ void A2TPC::MakeAnodeCathode(){
 	/***** visulization attributes *****/
 	fCathodeLogic->SetVisAttributes(lblue);
 }
+
+
+/*
+G4Tubs *fAnode = new G4Tubs("Anode", //name
+                                    0, //inner radius
+                                    fRadius, //outer radius
+                                    (fGThickness)/2, //half length
+                                    0.*deg, //start angle
+                                    360.*deg); //spanning angle
+
+//circular central piece (G-10)
+G4Tubs *fAnodeCentre = new G4Tubs("AnodeCentre",
+                                0,
+                                fRadPad*mm,
+                                fGThickness/2,
+                                0.*deg,
+                                360.*deg);
+//ring around central piece (G-10)
+    G4Tubs *fAnodeRing = new G4Tubs("AnodeRing", 
+                                    fRadPad*mm,
+                                    fRadRing*mm,
+                                    fGThickness/2,
+                                    0.*deg,
+                                    360.*deg);
+
+//logical volumes	
+//volume holding entire anode (helium)
+fAnodeLogic = new G4LogicalVolume
+                    (fAnode,
+                        fNistManager->FindOrBuildMaterial(fHeMaterial),
+                        "AnodeLogic");
+
+//circular central piece (G-10)
+    fAnodeCentreLogic = new G4LogicalVolume
+                    (fAnodeCentre,
+                    fNistManager->FindOrBuildMaterial("G-10"),
+                    "AnodeCentreLogic");
+//ring around central piece (G-10)
+    fAnodeRingLogic = new G4LogicalVolume
+                    (fAnodeRing,
+                    fNistManager->FindOrBuildMaterial("G-10"),
+                    "AnodeRingLogic");
+
+//visualization attributes
+    G4VisAttributes* lblue  = new G4VisAttributes( G4Colour(0.0,0.0,0.75) );
+    G4VisAttributes* grey   = new G4VisAttributes( G4Colour(0.5,0.5,0.5)  );
+    fAnodeLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
+    fAnodeCentreLogic->SetVisAttributes(lblue);
+    fAnodeRingLogic->SetVisAttributes(lblue);
+
+//place anode parts to fAnodeLogic
+    //circular central piece (G-10)
+                        
+new G4PVPlacement(0, //rotation
+                    G4ThreeVector(0,0,0), //placement
+                    fAnodeCentreLogic, //logical volume
+                    "AnodeCentrePlacement", //name
+                    fAnodeLogic, //mother volume
+                    false, //pmany: always false
+                    //1);
+        2+4*(fAngularSecs),fIsOverlapVol); //unique copy number
+    //ring around central piece (G-10)
+new G4PVPlacement(0, //rotation
+                    G4ThreeVector(0,0,0), //placement
+                    fAnodeRingLogic, //logical volume
+                    "AnodeRingPlacement", //name
+                    fAnodeLogic, //mother volume
+                    false, //pmany: always false
+                    //2);
+        1+4*(fAngularSecs),fIsOverlapVol); //unique copy number
+
+//segments of anode: reads specifications from parameter file //
+// define solid and logical volume for each radial section
+//new design: add some 
+G4double fAnodeSegmentsRadii[5]={fRadRing,fRad1,fRad2,fRad3,fRad4};
+for(G4int k=0; k<4; k++){
+    //section of each row (G-10)
+    fAnodeSec[k] = new G4Tubs("AnodeSec",
+                            fAnodeSegmentsRadii[k],
+                            fAnodeSegmentsRadii[k+1],
+                            fGThickness/2,
+                            0.*deg,
+                            360.*deg/fAngularSecs);
+    fAnodeRingSectorsLogic[k] = new G4LogicalVolume
+                    (fAnodeSec[k],
+                    fNistManager->FindOrBuildMaterial("G-10"),
+                    "AnodeSecLogic");
+                    fAnodeRingSectorsLogic[k]->SetVisAttributes(lblue);
+
+//place ring segments to anode
+        G4cout << "ring: " << k << G4endl;
+        for(G4int h=0; h<fAngularSecs;h++){ //for however many angular sections were defined in paramter file
+            //define the angle
+                G4double theta = h*360.*deg/fAngularSecs;
+                //generate a rotation matrix
+                G4RotationMatrix* rot = new G4RotationMatrix(theta,0,0);
+                //place one section of each ring at this angle
+        //section of first row (G-10)
+                new G4PVPlacement(rot, //rotation
+                    G4ThreeVector(0,0,0),
+                    fAnodeRingSectorsLogic[k], //logical volume
+                    "AnodeSecPlacement", //name
+                    fAnodeLogic, //mother volume
+                    false, //pmany: always false
+                    1+h*4+k,fIsOverlapVol);
+                    G4cout << "\tid: " << 1+h*4+k << G4endl; 
+        //1+h+k*fAngularSecs,fIsOverlapVol); //unique copy number
+    }
+}
+
+//build solids for cathode geometry
+//aluminum cathode
+G4Tubs *fCathode = new G4Tubs("Cathode",
+                                0,
+                                fCathodeRadius,
+                                fAlThickness/2,
+                                0.*deg,
+                                360.*deg);
+
+//cathode logical volumes
+//aluminum cathode
+fCathodeLogic = new G4LogicalVolume(fCathode,
+                fNistManager->FindOrBuildMaterial("Aluminum"),
+                "CathodeLogic");
+
+//visulization attributes
+fCathodeLogic->SetVisAttributes(lblue);
+}
+/*
 
 /**** This function builds the wire grid *****/
 void A2TPC::MakeGrid(){
@@ -533,19 +620,24 @@ void A2TPC::MakeSensitiveDetector(){
 	/***** define and register sensitive detector *****/
         if(!fAnodeSD){ //if SD not already defined
         G4SDManager* SDman = G4SDManager::GetSDMpointer(); //get pointer to SD manager
-        fAnodeSD = new A2SD("AnodeSD",2+4*fAngularSecs); //create a new SD
+		G4int totalNumberOfAnodeSegments = 0;
+		for (std::size_t i=0; i<fAnodeSegmentsN.size(); ++i)
+		{
+			totalNumberOfAnodeSegments += fAnodeSegmentsN[i];
+		}
+        fAnodeSD = new A2SD("AnodeSD",totalNumberOfAnodeSegments); //create a new SD
         SDman->AddNewDetector(fAnodeSD); //add this detector to the SD manager
 
         /***** set each piece of anode as part of the sensitive detector *****/
 	
-	for(G4int n=0; n<4; n++){ //for each anode section
-		fAnodeSecLogic[n]->SetSensitiveDetector(fAnodeSD); //make sensitive
-		fRegionAnode->AddRootLogicalVolume(fAnodeSecLogic[n]); //add to region
+	for(G4int n=0; n<fAnodeRingSectorsLogic.size(); n++){ //for each anode section
+		fAnodeRingSectorsLogic[n]->SetSensitiveDetector(fAnodeSD); //make sensitive
+		fRegionAnode->AddRootLogicalVolume(fAnodeRingSectorsLogic[n]); //add to region
 	}
-	fAnodeCentreLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
-        fAnodeRingLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
-        fRegionAnode->AddRootLogicalVolume(fAnodeCentreLogic); //add to region
-	fRegionAnode->AddRootLogicalVolume(fAnodeRingLogic); //add to region
+	//fAnodeCentreLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
+        //fAnodeRingLogic->SetSensitiveDetector(fAnodeSD); //make sensitive
+        //fRegionAnode->AddRootLogicalVolume(fAnodeCentreLogic); //add to region
+	//fRegionAnode->AddRootLogicalVolume(fAnodeRingLogic); //add to region
     }
 }
 
@@ -561,18 +653,44 @@ void A2TPC::MakeField(){
 	// gas and can make event tracking effectively stall for Compton input.
 
 	fRegionActiveGas->AddRootLogicalVolume(fVesselHeLogic); //create active gas region
+    A2UserRegionInformation* regionInfo = new A2UserRegionInformation();
+    regionInfo->SetEfield(fEfield);
+    regionInfo->SetTemperature(fTemperature);
+	regionInfo->SetSimulateElectronLoss(fSimulateElectronLoss);
+	regionInfo->SetLambdaAttachement(fLambdaAttachement);
+	regionInfo->SetDetectionSurvivalProbability(fDetectionSurvivalProbability);
+
+    const G4double anodeCenterZ =-fLength/2. + fAnodeDistance;
+    const G4double cathodeCenterZ =fLength/2. - fCathodeDistance;
+    // Gas-facing surfaces
+    const G4double anodeZ =anodeCenterZ + fGThickness/2.;
+    const G4double cathodeZ =cathodeCenterZ - fAlThickness/2.;
+    regionInfo->SetAnodeZ(anodeZ);
+    regionInfo->SetCathodeZ(cathodeZ);
+    regionInfo->SetAnodeCathodeDistance(cathodeZ - anodeZ);
+    
+    fRegionActiveGas->SetUserInformation(regionInfo);
 
 	/***** set specific production cuts for active gas region *****/
 	G4ProductionCuts* TPCcuts = new G4ProductionCuts(); //create custom cut
 	G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(7*eV,1*GeV); //optimized at 7 eV lower limit
-	//this gives the most linear charge-energy relationship
+
+    //no delta electrons shall be produced, 
+    //sampling of electron ion pairs is manually done in A2DriftandHitLogic with W-value 
+    ////he3: 10mm<->54.0keV, he4:10mm<->47.4keV
+    TPCcuts->SetProductionCut(10*mm, G4ProductionCuts::GetIndex("e-")); 
 	fRegionActiveGas->SetProductionCuts(TPCcuts); //assign this cut to this region
-	
+    G4UserLimits* tpcLimits = new G4UserLimits();
+    tpcLimits->SetMaxAllowedStep(0.01*mm); //to get a better resolution of the energy loss along the track
+    fRegionActiveGas->SetUserLimits(tpcLimits);
+
 	/***** attach model of electron drift to active gas region *****/
-	A2DriftModel *driftPhys = new A2DriftModel("Electron Drift Model",fRegionActiveGas,this,fAnodeSD); //create model
-	G4FastSimulationManager* driftMan = new G4FastSimulationManager(fRegionActiveGas); //call fast simulation manager
-	driftMan->AddFastSimulationModel(driftPhys); //add model as a fast simulation
-	driftMan->ActivateFastSimulationModel("driftPhys"); //activate model
+    /*
+    A2DriftModel *driftPhys = new A2DriftModel("Electron Drift Model",fRegionActiveGas); //create model
+    G4FastSimulationManager* driftMan = new G4FastSimulationManager(fRegionActiveGas); //call fast simulation manager
+    driftMan->AddFastSimulationModel(driftPhys); //add model as a fast simulation
+    driftMan->ActivateFastSimulationModel("driftPhys"); //activate model
+    */
 }
 
 
@@ -637,8 +755,8 @@ void A2TPC::PlaceParts(){
 /***** this function reads target dimensions from a data file *****/
 void A2TPC::ReadParameters(const char* file){
 	//define keys contained in file
-        char* keylist[] = { (char*) "TPC-Dim:", (char*) "Anode-Dim:", (char*) "Cathode-Dim:", (char*) "Grid-Dim:", (char*) "Helium:", (char*) "Run-Mode:", NULL};
-        enum { ETPC_dim, EAnode_dim, ECathode_dim, EGrid_dim, EHelium, ERun_Mode, ENULL };
+        char* keylist[] = { (char*) "TPC-Dim:", (char*) "Anode-Radii:", (char*) "Anode-Segments:", (char*) "Anode-Dim:", (char*) "Cathode-Dim:", (char*) "Grid-Dim:", (char*) "Run-Mode:", NULL};
+        enum { ETPC_dim, EAnode_radii, EAnode_segments, EAnode_dim, ECathode_dim, EGrid_dim, ERun_Mode, ENULL };
         //define variables needed for reading the file
         G4int ikey, iread;
         G4int ierr = 0;
@@ -669,10 +787,36 @@ void A2TPC::ReadParameters(const char* file){
                            &fExtension,&fExtRadius,&fEndThickness,&fBeThickness);
             if( iread != 8) ierr++;
             break;
+		case EAnode_radii://fAnodeSegmentsRadii of the segements
+		{
+			std::istringstream iss(line);
+			G4double radius;
+			std::string key;
+			iss>>key;
+			fAnodeSegmentsRadii.clear();
+			while(iss>>radius)
+			{
+				fAnodeSegmentsRadii.push_back(radius);
+			}
+			break;
+		}
+		case EAnode_segments://number of segements of a ring
+		{	
+			std::istringstream iss(line);
+			G4int nSegment;
+			std::string key;
+			iss>>key;
+			fAnodeSegmentsN.clear();
+			while(iss>>nSegment)
+			{
+				fAnodeSegmentsN.push_back(nSegment);
+			}
+			break;
+		}
         case EAnode_dim: //dimensions of anode
-            iread = sscanf(line,"%*s%lf%lf%i%lf%lf%lf%lf%lf%lf",
-                            &fGThickness,&fAnodeDistance,&fAngularSecs,&fRadPad,&fRadRing,&fRad1,&fRad2,&fRad3,&fRad4);
-            if (iread !=9) ierr++;
+            iread = sscanf(line,"%*s%lf%lf",
+                            &fGThickness,&fAnodeDistance);
+            if (iread !=2) ierr++;
             break;
         case EGrid_dim: //dimensions of anode
             iread = sscanf(line,"%*s%lf%lf",
@@ -684,11 +828,6 @@ void A2TPC::ReadParameters(const char* file){
                             &fAlThickness,&fCathodeRadius,&fCathodeDistance);
             if (iread !=3) ierr++;
             break;
-	case EHelium:
-	    iread = sscanf(line,"%*s%i%lf",
-			    &fHeIsotope,&fHePressure);
-	    if (iread !=2) ierr++;
-	    break;
         case ERun_Mode: //run mode
             iread = sscanf(line,"%*s%d",
                            &fIsOverlapVol);
@@ -702,12 +841,333 @@ void A2TPC::ReadParameters(const char* file){
                 }
         }
 }
+// This revision of the material definitions was developed with the assistance
+// of ChatGPT (OpenAI), partly due to time constraints during the thesis work.
+void A2TPC::DefineMaterials()
+{
+    
+    G4double density, fractionmass;
+	G4int ncomponents;
+	//G4double pressure, temperature, a, z;
+
+	/***** beryllium used in target windows *****/
+	G4Material* BerylliumW = new G4Material("ATBerylliumW", density = 1.8480*g/cm3, ncomponents = 7);
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(14), 0.06*perCent);      //Si
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(4), 98.73*perCent);      //Be
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(6), 0.15*perCent);       //C
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(8), 0.75*perCent);       //O
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(12), 0.08*perCent);      //Mg
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(13), 0.1*perCent);       //Al
+	BerylliumW->AddElement(fNistManager->FindOrBuildElement(26), 0.13*perCent);      //Fe
+
+	/***** anode and cathode materials ****/
+        //copied from online source
+        //Anode G-10
+        G4Material* G10 = new G4Material("G-10", density= 1.700*g/cm3, ncomponents=4);
+        G10->AddElement(fNistManager->FindOrBuildElement(14), 1); //silicon
+        G10->AddElement(fNistManager->FindOrBuildElement(8), 2); //oxygen
+        G10->AddElement(fNistManager->FindOrBuildElement(6), 3); //carbon
+        G10->AddElement(fNistManager->FindOrBuildElement(1), 3); //hydrogen
+        //Anode copper
+        //G4Material* Cu = new G4Material("Copper",density= 8.960*g/cm3,ncomponents=1);
+        //Cu->AddElement(fNistManager->FindOrBuildElement(29),1);
+        //Cathode aluminum
+        G4Material* Al = new G4Material("Aluminum", density= 2.700*g/cm3,ncomponents=1);
+        Al->AddElement(fNistManager->FindOrBuildElement(13),1);
+    
+	
+	/***** Active gas from A2ActiveHe3.cc *****/
+	//Gas mixture and He3 management----------------------------------------------------
+
+	    /***** Active target gases *****/
+
+    const G4double gasPressure    = fHePressure;
+    const G4double gasTemperature = fTemperature;
+
+    const G4double molarGasConstant =
+        8.31446261815324 * joule / (mole * kelvin);
+
+
+    // -------------------------------------------------------------------------
+    // Isotopes and elements
+    // -------------------------------------------------------------------------
+
+    G4Isotope* H1Isotope =
+        new G4Isotope("ATH1Isotope", 1, 1);
+
+    G4Element* ATH =
+        new G4Element("ATH", "H1", 1);
+
+    ATH->AddIsotope(H1Isotope, 100.*perCent);
+
+
+    G4Isotope* DIsotope =
+        new G4Isotope("ATDeuteriumIsotope", 1, 2);
+
+    G4Element* ATD =
+        new G4Element("ATDeuterium", "D", 1);
+
+    ATD->AddIsotope(DIsotope, 100.*perCent);
+
+
+    G4Isotope* He3Isotope =
+        new G4Isotope("ATHe3Isotope", 2, 3);
+
+    G4Element* ATHe3 =
+        new G4Element("ATHe3", "He3", 1);
+
+    ATHe3->AddIsotope(He3Isotope, 100.*perCent);
+
+
+    G4Isotope* He4Isotope =
+        new G4Isotope("ATHe4Isotope", 2, 4);
+
+    G4Element* ATHe4 =
+        new G4Element("ATHe4", "He4", 1);
+
+    ATHe4->AddIsotope(He4Isotope, 100.*perCent);
+
+
+    G4Element* ATN =
+        fNistManager->FindOrBuildElement(7);
+
+
+    // -------------------------------------------------------------------------
+    // Molar masses
+    // -------------------------------------------------------------------------
+
+    const G4double molarMassH1  = ATH->GetA();
+    const G4double molarMassD   = ATD->GetA();
+    const G4double molarMassHe3 = ATHe3->GetA();
+    const G4double molarMassHe4 = ATHe4->GetA();
+    const G4double molarMassN   = ATN->GetA();
+
+    const G4double molarMassH2 = 2.0 * molarMassH1;
+    const G4double molarMassD2 = 2.0 * molarMassD;
+    const G4double molarMassN2 = 2.0 * molarMassN;
+
+
+    // -------------------------------------------------------------------------
+    // Pure gas densities
+    // Ideal-gas approximation: rho = p M / (R T)
+    // -------------------------------------------------------------------------
+
+    const G4double he3GasPureDensity =
+        gasPressure * molarMassHe3
+        / (molarGasConstant * gasTemperature);
+
+    const G4double he4GasPureDensity =
+        gasPressure * molarMassHe4
+        / (molarGasConstant * gasTemperature);
+
+    const G4double d2GasPureDensity =
+        gasPressure * molarMassD2
+        / (molarGasConstant * gasTemperature);
+
+
+    // -------------------------------------------------------------------------
+    // Active helium gas composition
+    //
+    // Assumption:
+    //   90 mol-% helium
+    //   10 mol-% H2
+    // -------------------------------------------------------------------------
+
+    const G4double activeHeliumMoleFraction = 90.*perCent;
+    const G4double activeH2MoleFraction     = 10.*perCent;
+
+
+    // -------------------------------------------------------------------------
+    // He3 + H2
+    // -------------------------------------------------------------------------
+
+    const G4double he3ActiveMolarMass =
+        activeHeliumMoleFraction * molarMassHe3
+        + activeH2MoleFraction * molarMassH2;
+
+    const G4double he3ActiveDensity =
+        gasPressure * he3ActiveMolarMass
+        / (molarGasConstant * gasTemperature);
+
+    const G4double he3ActiveHeMassFraction =
+        activeHeliumMoleFraction * molarMassHe3
+        / he3ActiveMolarMass;
+
+    const G4double he3ActiveHMassFraction =
+        activeH2MoleFraction * molarMassH2
+        / he3ActiveMolarMass;
+
+
+    // -------------------------------------------------------------------------
+    // He4 + H2
+    // -------------------------------------------------------------------------
+
+    const G4double he4ActiveMolarMass =
+        activeHeliumMoleFraction * molarMassHe4
+        + activeH2MoleFraction * molarMassH2;
+
+    const G4double he4ActiveDensity =
+        gasPressure * he4ActiveMolarMass
+        / (molarGasConstant * gasTemperature);
+
+    const G4double he4ActiveHeMassFraction =
+        activeHeliumMoleFraction * molarMassHe4
+        / he4ActiveMolarMass;
+
+    const G4double he4ActiveHMassFraction =
+        activeH2MoleFraction * molarMassH2
+        / he4ActiveMolarMass;
+
+
+    // -------------------------------------------------------------------------
+    // Legacy ATGasMix
+    //
+    // This preserves the EXISTING Geant4 interpretation:
+    // 99.95 mass-% He3 + 0.05 mass-% nitrogen.
+    //
+    // Verify experimentally whether the quoted 0.05 % nitrogen is actually
+    // specified as mass fraction or as mole/volume fraction.
+    // -------------------------------------------------------------------------
+
+    const G4double gasMixHe3MassFraction =
+        99.95*perCent;
+
+    const G4double gasMixNitrogenMassFraction =
+        0.05*perCent;
+
+    const G4double gasMixMolarMass =
+        1.0 /
+        (
+            gasMixHe3MassFraction / molarMassHe3
+            + gasMixNitrogenMassFraction / molarMassN2
+        );
+
+    const G4double gasMixDensity =
+        gasPressure * gasMixMolarMass
+        / (molarGasConstant * gasTemperature);
+
+
+    // -------------------------------------------------------------------------
+    // Materials
+    // -------------------------------------------------------------------------
+
+    G4Material* GasMix =
+        new G4Material(
+            "ATGasMix",
+            gasMixDensity,
+            2,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    GasMix->AddElement(
+        ATHe3,
+        gasMixHe3MassFraction
+    );
+
+    GasMix->AddElement(
+        ATN,
+        gasMixNitrogenMassFraction
+    );
+
+
+    G4Material* He3GasPure =
+        new G4Material(
+            "He3GasPure",
+            he3GasPureDensity,
+            1,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He3GasPure->AddElement(
+        ATHe3,
+        1
+    );
+
+
+    G4Material* He3ActiveGas =
+        new G4Material(
+            "He3ActiveGas",
+            he3ActiveDensity,
+            2,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He3ActiveGas->AddElement(
+        ATHe3,
+        he3ActiveHeMassFraction
+    );
+
+    He3ActiveGas->AddElement(
+        ATH,
+        he3ActiveHMassFraction
+    );
+
+
+    G4Material* He4GasPure =
+        new G4Material(
+            "He4GasPure",
+            he4GasPureDensity,
+            1,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He4GasPure->AddElement(
+        ATHe4,
+        1
+    );
+
+
+    G4Material* He4ActiveGas =
+        new G4Material(
+            "He4ActiveGas",
+            he4ActiveDensity,
+            2,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    He4ActiveGas->AddElement(
+        ATHe4,
+        he4ActiveHeMassFraction
+    );
+
+    He4ActiveGas->AddElement(
+        ATH,
+        he4ActiveHMassFraction
+    );
+
+
+    G4Material* D2GasPure =
+        new G4Material(
+            "D2GasPure",
+            d2GasPureDensity,
+            1,
+            kStateGas,
+            gasTemperature,
+            gasPressure
+        );
+
+    D2GasPure->AddElement(
+        ATD,
+        2
+    );
+}
 
 
 /***** this function defines the materials used to build the target ******/
-void A2TPC::DefineMaterials()
+void A2TPC::DefineMaterialsLegacy()
 {
-	G4double density, fractionmass;
+    
+    G4double density, fractionmass;
 	G4int ncomponents;
 	//G4double pressure, temperature, a, z;
 
@@ -749,13 +1209,12 @@ void A2TPC::DefineMaterials()
 	ATH->AddIsotope((G4Isotope*)fNistManager->FindOrBuildElement(1)->GetIsotope(0),100.*perCent);
 
 	//See HeGasDensity.nb. Might be an idea to include N2 effect to density
-	//G4double he3density = 0.00247621*g/cm3; //20bar, calculated from ideal gas law
-	//G4double he3density = 0.0033*g/cm3; //20bar, calculated from ideal gas law
+	//G4double he3density = 0.00247621*g/cm3; //20bar, calculated from ideal gas law  //needs to be checked
+	//G4double he3density = 0.0033*g/cm3; //20bar, calculated from ideal gas law   //needs to be checked
 	//G4double he3density = 0.004125*g/cm3; //25bar, calculated from ideal gas law
 	//G4double he3density = 0.00495*g/cm3; //30bar, calculated from ideal gas law
-	G4double he3density = (fHePressure/20)*0.0033*g/cm3; //scale Phil's IG calculation according to pressure from parameter file 
-
-	G4Material* GasMix = new G4Material("ATGasMix", he3density, ncomponents = 2,kStateGas,CLHEP::STP_Pressure,fHePressure*bar);
+	G4double he3density = (fHePressure/(20*bar))*0.0033*g/cm3; //scale Phil's IG calculation according to pressure from parameter file 
+	G4Material* GasMix = new G4Material("ATGasMix", he3density, ncomponents = 2,kStateGas,fTemperature,fHePressure); 
 	GasMix->AddElement(ATHe3, 99.95*perCent);                                       //He3
 	// GasMix->AddElement(fNistManager->FindOrBuildElement(2), 99.95*perCent);         //He4
 	GasMix->AddElement(fNistManager->FindOrBuildElement(7), 0.05*perCent);           //N
@@ -763,31 +1222,36 @@ void A2TPC::DefineMaterials()
 	//----! IMPORTANT! Epoxy CURRENTLY TAKEN FROM A2 SIMULATION,------------------
 	//NO IDEA WHETHER IT IS CORRECT OR NOT
 
-	G4Material* He3GasPure = new G4Material("He3GasPure", he3density, ncomponents = 1,kStateGas,CLHEP::STP_Temperature,fHePressure*bar);
+	G4Material* He3GasPure = new G4Material("He3GasPure", he3density, ncomponents = 1,kStateGas, fTemperature,fHePressure); 
 	He3GasPure->AddElement(ATHe3, 100.*perCent);
 
 	//Active gas - has 10% hydrogen
 	//density decreases accordingly: 0.9*1 + 0.1 * (2/3) = 0.96 of original density
-	G4Material* He3ActiveGas = new G4Material("He3ActiveGas",he3density*0.96, ncomponents =2, kStateGas, CLHEP::STP_Temperature,fHePressure*bar);
+	G4Material* He3ActiveGas = new G4Material("He3ActiveGas",he3density*0.96, ncomponents =2, kStateGas, fTemperature,fHePressure); 
 	He3ActiveGas->AddElement(ATHe3,90.*perCent);
 	He3ActiveGas->AddElement(ATH,10.*perCent);
 
 	//define He4 in a similar manner
 	G4Element* ATHe4 = new G4Element("ATHe4","ATHe4",ncomponents=1);
 	ATHe4->AddIsotope((G4Isotope*)fNistManager->FindOrBuildElement(2)->GetIsotope(1),100.*perCent);
-	G4double he4density = (fHePressure/20)*0.0033*g/cm3*(4/3); //scale Phil's IG calculation according to pressure from parameter file
+	G4double he4density = (fHePressure/(20*bar))*0.0033*g/cm3*(4/3); //scale Phil's IG calculation according to pressure from parameter file
 	//4He edit: assume same number density as helium-3, but more nucleons means more mass
 
-	G4Material* He4GasPure = new G4Material("He4GasPure",he4density, ncomponents=1,kStateGas,CLHEP::STP_Temperature,fHePressure*bar);
+	G4Material* He4GasPure = new G4Material("He4GasPure",he4density, ncomponents=1,kStateGas, fTemperature,fHePressure);
 	He4GasPure->AddElement(ATHe4, 100.*perCent);
 
 
-	G4Material* He4ActiveGas = new G4Material("He4ActiveGas",he4density*0.96, ncomponents =2, kStateGas, CLHEP::STP_Temperature,fHePressure*bar);
+	G4Material* He4ActiveGas = new G4Material("He4ActiveGas",he4density*0.96, ncomponents =2, kStateGas, fTemperature,fHePressure); 
 	He4ActiveGas->AddElement(ATHe4,90.*perCent);
 	He4ActiveGas->AddElement(ATH,10.*perCent);
 	//decide which version of helium you are using
 	//G4String fHeMaterial;
+
+
+    /*active target gas is now set in the detectormessenger not the data file
 	if(fHeIsotope==3){fHeMaterial="He3ActiveGas";
 	} else if(fHeIsotope==4){fHeMaterial="He4ActiveGas";
 	} else {fHeMaterial="ATGasMix";} //make the mix for any non-3,4 argument
+    */
 }
+

@@ -1,8 +1,8 @@
-
 #ifndef A2Hit_h
 #define A2Hit_h 1
 
 #include <deque>
+#include <vector>
 
 #include "G4VHit.hh"
 #include "G4THitsCollection.hh"
@@ -10,12 +10,18 @@
 #include "G4ThreeVector.hh"
 #include "G4LogicalVolume.hh"
 
-
+struct DriftParametersTPC2 //same struct exists in A2UserTrackInfo, which makes the compiler compalin thus the 2
+{
+    G4double selectedPressure;
+    G4double selectedEfield;
+    G4double vDrift;
+    G4double longitudinalDiffusionCoefficient;
+    G4double transversalDiffusionCoefficient;
+};
 
 class A2Hit : public G4VHit
 {
 public:
-
   A2Hit();
   A2Hit(G4LogicalVolume* logVol); //new constructor
   ~A2Hit();
@@ -58,6 +64,34 @@ public:
   G4double GetTime() { return fTime; };
   G4int GetNParticles();
   G4int GetParticle();
+
+  //void SetSequenceIndexTPC(G4int sequenceIndexTPC){fSequenceIndexTPC = sequenceIndexTPC;}
+  //G4int GetSequenceIndexTPC() const {return fSequenceIndexTPC;}
+  void AppendHitTimeTPC(G4double hitTime){fHitTimesTPC.push_back(hitTime);}
+  std::vector<G4double> GetHitTimesTPC() const {return fHitTimesTPC;}
+  void ClearHitTimesTPC() {fHitTimesTPC.clear();}
+private:
+  //drift coefficients for TPC
+  G4bool fHasDriftParametersTPC=false;
+  DriftParametersTPC2 fDriftParametersTPC;
+  //G4int fSequenceIndexTPC;
+  std::vector<G4double> fHitTimesTPC;
+public:
+  void SetHasDriftParametersTPC(bool hasDriftParametersTPC){fHasDriftParametersTPC=hasDriftParametersTPC;}
+  G4bool GetHasDriftParametersTPC(){return fHasDriftParametersTPC;}
+  void SetDriftParametersTPC(double selectedPressure,
+                          double selectedEfield,
+                          double vDrift,
+                          double longitudinalDiffusionCoefficient,
+                          double transversalDiffusionCoefficient)
+  {
+      fDriftParametersTPC.selectedPressure=selectedPressure;
+      fDriftParametersTPC.selectedEfield=selectedEfield;
+      fDriftParametersTPC.vDrift=vDrift;
+      fDriftParametersTPC.longitudinalDiffusionCoefficient=longitudinalDiffusionCoefficient;
+      fDriftParametersTPC.transversalDiffusionCoefficient=transversalDiffusionCoefficient;
+  }
+  DriftParametersTPC2 GetDriftParametersTPC(){return fDriftParametersTPC;}
 };
 
 

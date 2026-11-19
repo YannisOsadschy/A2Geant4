@@ -99,7 +99,10 @@ protected:
   Int_t fitpc[MAXSIZE_TPC]; //hit section index
   Float_t fqtpc[MAXSIZE_TPC]; //hit energy deposit
   Float_t fttpc[MAXSIZE_TPC]; //hit time
-  
+  Double_t ftMeantpc[MAXSIZE_TPC];
+  Double_t ftSigmatpc[MAXSIZE_TPC];
+  std::vector<std::vector<double>> ftRawtpc; //hit times
+
   Int_t fnpiz; //Number of hits in Pizza detector
   Int_t fipiz[MAXSIZE_PIZZA]; //hit sector indexes
   Float_t fepiz[MAXSIZE_PIZZA]; //hit sector energy deposits
@@ -115,6 +118,9 @@ protected:
   G4int fCBCollID;
   G4int fTAPSCollID;
   G4bool fStorePrimaries;
+  //TPC related stuff: currently the Drift Coefficients are attached to each track, 
+  //but they should only be safed once. When I have time I will change the process of storing those parameters to be more direct
+  G4bool fHaveDriftParametersAlreadybeenWritten=false;
 
 public:
   void SetFile(TFile* f){fFile=f;fTree->SetDirectory(fFile);}
@@ -129,6 +135,10 @@ public:
   void WriteTree(){fTree->Write();}
   void WriteHit(G4HCofThisEvent* );
   void WriteGenInput();
+
+private:
+  double GetMean(const std::vector<double>&) const;
+  double GetStandardDeviation(const std::vector<double>&) const;
 };
 
 

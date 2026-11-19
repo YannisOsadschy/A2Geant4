@@ -67,6 +67,24 @@ class A2DetectorConstruction : public G4VUserDetectorConstruction
   void SetPIDZ(G4double zz){fPIDZ=zz;}
   void SetPIDRotation(G4double rot){fPIDRotation=rot;}
   void SetPizzaZ(G4double zz){fPizzaZ=zz;}
+   
+  void SetTPCtemperature(G4double temperature){fTPCTemperature=temperature;}
+  void SetTPCpressure(G4double pressure){fTPCPressure=pressure;}
+  void SetTPCefield(G4double Efield){fTPCEfield=Efield;}
+  void SetTPCtargetGas(G4String targetGas)
+  {
+    if (targetGas=="He3ActiveGas" || targetGas=="He4ActiveGas" || targetGas=="D2GasPure" || targetGas=="He3GasPure") fTPCTargetGas=targetGas;
+    else 
+    {
+      G4cout << targetGas << " is not a supported active target material" << G4endl;
+      exit(0);
+    }
+  }
+  void SetTPCSimulateElectronLoss(G4bool simulateElectronLoss){fTPCSimulateElectronLoss=simulateElectronLoss;}
+	void SetTPCLambdaAttachement(G4double lambdaAttachement){fTPCLambdaAttachement=lambdaAttachement;}
+	void SetTPCDetectionSurvivalProbability(G4double detectionSurvivalProbability){fTPCDetectionSurvivalProbability=detectionSurvivalProbability;}
+  
+
 
   A2Target* GetTarget(){return fTarget;}
 
@@ -139,6 +157,16 @@ public:
 
   // Pizza setup
   G4double fPizzaZ;
+
+  //TPC setup
+  G4double fTPCTemperature;
+  G4double fTPCPressure;
+  G4double fTPCEfield;
+  G4String fTPCTargetGas;
+  G4bool fTPCSimulateElectronLoss;
+  G4double fTPCLambdaAttachement;
+  G4double fTPCDetectionSurvivalProbability;
+
 
 private:
     

@@ -1,0 +1,47 @@
+#ifndef A2UserRegionInformation_h
+#define A2UserRegionInformation_h 1
+
+#include "G4VUserRegionInformation.hh"
+
+
+//this class is solely used as a container to pass the values of the constant Efield and temperature in the TPC (implemented in A2TPC) to the A2DriftandHitLogic class for parametric drift via a region object.
+class A2UserRegionInformation : public G4VUserRegionInformation
+{
+    public:
+        void SetEfield(double Efield) {fEfield = Efield;}
+        double GetEfield() const {return fEfield;}
+        void SetTemperature(double temperature) {fTemperature = temperature;}
+        double GetTemperature() const {return fTemperature;}
+        void SetSimulateElectronLoss(bool simulateElectronLoss){fSimulateElectronLoss=simulateElectronLoss;}
+	    void SetLambdaAttachement(double lambdaAttachement){fLambdaAttachement=lambdaAttachement;}
+	    void SetDetectionSurvivalProbability(double detectionSurvivalProbability){fDetectionSurvivalProbability=detectionSurvivalProbability;}
+        void SetAnodeCathodeDistance(double anodeCathodeDistance){fAnodeCathodeDistance=anodeCathodeDistance;}
+        bool GetSimulateElectronLoss() const{return fSimulateElectronLoss;}
+        double GetLambdaAttachement() const{return fLambdaAttachement;}
+        double GetDetectionSurvivalProbability() const{return fDetectionSurvivalProbability;}
+        double GetAnodeCathodeDistance() const{return fAnodeCathodeDistance;}
+
+        // z coordinates of the gas-facing electrode surfaces
+        void SetAnodeZ(double anodeZ){fAnodeZ = anodeZ;}
+        double GetAnodeZ() const{return fAnodeZ;}
+        void SetCathodeZ(double cathodeZ){fCathodeZ = cathodeZ;}
+        double GetCathodeZ() const{return fCathodeZ;}
+
+        void Print() const override {}
+
+    private:
+        double fEfield;
+        double fTemperature;
+        bool fSimulateElectronLoss;
+        double fLambdaAttachement;
+        double fDetectionSurvivalProbability;
+        double fAnodeCathodeDistance;
+
+        // Active drift-volume boundaries
+        double fAnodeZ;
+        double fCathodeZ;
+
+
+};
+
+#endif

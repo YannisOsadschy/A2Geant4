@@ -20,6 +20,11 @@
 #include "G4FastSimulationManagerProcess.hh"
 #include "A2DriftModel.hh"
 
+#include "A2SteppingActionMessenger.hh"
+#include "A2DriftandHitLogic.hh"
+#include "A2UserRegionInformation.hh"
+
+
 using namespace CLHEP;
 
 ////#include "G4RunManager.hh"
@@ -33,6 +38,10 @@ A2SteppingAction::A2SteppingAction(A2DetectorConstruction* det,
     eventaction = evt;
     fRegion=NULL;
     fFSManager=NULL;
+    fDrifter = nullptr;
+    fSampleElectrons = true;
+    fSteppingMessenger = new A2SteppingActionMessenger(this);
+
 }
 
 
@@ -164,7 +173,78 @@ else if(aStep->GetPreStepPoint()->GetGlobalTime()>2*ms)track->SetTrackStatus(fSt
   //bug in phot process, can't get rid of gamma with energy 1.2E-5MeV
   //goes into infinite loop!
   if(track->GetDefinition()->GetParticleName()==G4Gamma::Gamma()->GetParticleName()&&track->GetKineticEnergy()/MeV<1E-4&&fpSteppingManager->GetfCurrentProcess()->GetProcessName()==G4String("phot"))track->SetTrackStatus(fStopAndKill);
+
+  if (fSampleElectrons)
+	
+    {
+	
+        G4StepPoint* preStep = aStep->GetPreStepPoint();
+	
+        G4LogicalVolume* logicalVolume = preStep->GetTouchableHandle()->GetVolume()->GetLogicalVolume();
+	
+        G4Region* region =logicalVolume->GetRegion();
+	
+        G4String particleName = aStep->GetTrack()->GetParticleDefinition()->GetParticleName();
+	
+ 
+	
+        if (region && region->GetName() == "ActiveGas")
+	
+        {
+	
+            A2UserRegionInformation* regionInfo = static_cast<A2UserRegionInformation*>(region->GetUserInformation());
+	
+            const G4double z =preStep->GetPosition().z();
+	
+            const G4double anodeZ = regionInfo->GetAnodeZ();
+	
+            const G4double cathodeZ = regionInfo->GetCathodeZ();
+	
+            const bool insideDriftVolume = z>anodeZ && z<cathodeZ;
+	
+            const G4String materialName = logicalVolume->GetMaterial()->GetName();
+	
+            const bool isTPCGas = materialName == "He3ActiveGas" || materialName == "He4ActiveGas" || materialName == "D2GasPure";
+	
+            const bool isTPCSignalParticle = particleName == "alpha" || particleName == "He3" || particleName == "deuteron";
+	
+            if (insideDriftVolume && isTPCGas && isTPCSignalParticle)
+	
+            {
+	
+                if (!fDrifter)
+	
+                {
+	
+                    fDrifter =
+	
+                        new A2DriftandHitLogic(region);
+	
+                }
+	
+ 
+	
+                fDrifter->SampleEdep(aStep);
+	
+            }
+	
+        }
+	
+    }
+	
 }
+	
+ 
+	
+void A2SteppingAction::SetSampleElectrons(bool sampleElectrons)
+	
+{
+	
+    fSampleElectrons = sampleElectrons;
+	
+}
+
+
 
 
 
