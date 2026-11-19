@@ -1,3 +1,5 @@
 /G4History.macro
 /build
 runs/
+/diff_analysis
+changes.py
